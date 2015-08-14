@@ -9,7 +9,7 @@ import sys
 import os
 from playerdatabase import PlayerDatabase
 from draftteam import DraftTeams
-import ipdb
+import pdb
 
 # Set configuration parameters
 def set_config():
@@ -173,7 +173,7 @@ def main():
     
     # Main Loop
     while True:
-	
+        
         # Get round number
         n_round = draftteams.round()
 
@@ -203,25 +203,62 @@ def main():
         # Rank players
         player_db.rank_players(drafted_players, n_round, pos_weights)
 	
-        # Print out rankings short list
-        for i in range(0, 5):
-            print_str = '{}: {} at {} from {}'.format(i+1,
-                                                      player_db.rank[i],
-                                                      player_db.position[player_db.rank[i]],
-                                                      player_db.team[player_db.rank[i]])
-            print print_str
-        print ''
+        # Only print 1 ranking by default
+        n_print_players = 1
 
         # Console loop until valid draft command is received
         while True:
+        
+            # Print out rankings short list
+            for i in range(0, n_print_players):
+                print_str = '{}: {} at {} from {} (ADP {})'.format(i+1,
+                    player_db.rank[i],
+                    player_db.position[player_db.rank[i]],
+                    player_db.team[player_db.rank[i]],
+                    player_db.adp[player_db.rank[i]])
+                print print_str
+        
             
             # Prompt user for pick
-            print '(''exit'' to quit)'
-            console_inp = raw_input('Enter Pick: ')
+            print ''
+            console_inp = raw_input('Enter Pick (''exit'' to quit): ')
 		
-            # Exit on command
+            # Process command
             if console_inp.find('exit') >= 0:
+                
+                # Exit on command
                 sys.exit()
+                
+            elif console_inp.isdigit():
+                
+                # Set number of rankings list to print
+                n_print_players = int(console_inp)
+                
+                # Saturate at max ranking
+                n_print_players = min(n_print_players, len(player_db.rank))
+                
+                print ''
+                
+            elif console_inp in player_db.adp:
+            
+                # Save drafted player and break loop
+                player_to_draft = console_inp
+                
+                break
+                
+            else:
+                
+                # Don't reprint list
+                n_print_players = 0
+                
+                # Print error message
+                print ''
+                print console_inp+' not recognized'
+                
+        # Draft player
+        draftteams.teams[drafter].draft_player(n_round,
+                                               player_to_draft,
+                                               player_db.position[player_to_draft])
 
 if __name__ == '__main__':
   main()

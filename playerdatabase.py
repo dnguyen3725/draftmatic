@@ -7,7 +7,8 @@
 
 import os
 import xlrd
-import ipdb
+import copy
+import pdb
 
 class PlayerDatabase:
 
@@ -196,15 +197,16 @@ class PlayerDatabase:
         for row_idx in range(0, xl_sheet.nrows):
 				
             # Scan through file looking for header row	
-            if (not found_header) and (xl_sheet.cell(row_idx, 0).value.find('ADP') >= 0):
+            if (not found_header) and (xl_sheet.cell(row_idx, 1).value.find('Player Name') >= 0):
 				
                 found_header = True
 				
             # After header row is found, process remaining player data
             elif found_header:
-					
+                
                 # ADP
-		adp = xl_sheet.cell(row_idx, 0).value
+                adp = xl_sheet.cell(row_idx, 0).value
+                adp = int(adp)
 					
                 # Player name
                 player_name = xl_sheet.cell(row_idx, 1).value.encode('utf-8')
@@ -237,8 +239,8 @@ class PlayerDatabase:
     def rank_players(self, drafted_players, n_round, pos_weights):
 	
         # Initialize available player lists to include all players
-        self.avail_players = self.players
-        self.avail_adp = self.adp
+        self.avail_players = copy.deepcopy(self.players)
+        self.avail_adp = copy.deepcopy(self.adp)
 
         # Create counters for drafted positions
         n_pos_drafted = {}
@@ -249,9 +251,9 @@ class PlayerDatabase:
 
         # Removed drafted players
         for player in drafted_players:
-        
+            
             n_pos_drafted[self.position[player]] += 1
-            del self.avail_players[self.position[player]][player]
+            self.avail_players[self.position[player]].remove(player)
             del self.avail_adp[player]
 
         # Number of players deep to look for baseline player
@@ -295,17 +297,19 @@ class PlayerDatabase:
                 # Get basline score
                 vbd_baseline[pos] = self.proj_points[pos][players_fpts_sorted[pos_baseline[pos]]]
 
-                # Calculate vbd for all players in position
+                # Calculate vbd for all available players in position
                 for player in self.proj_points[pos]:
+                    
+                    if player in self.avail_players[pos]:
+                    
+                        vbd[pos][player] = self.proj_points[pos][player] - vbd_baseline[pos]
+                        vbd_low[pos][player] = self.proj_points_low[pos][player] - vbd_baseline[pos]
+                        vbd_high[pos][player] = self.proj_points_high[pos][player] - vbd_baseline[pos]
 
-                    vbd[pos][player] = self.proj_points[pos][player] - vbd_baseline[pos]
-                    vbd_low[pos][player] = self.proj_points_low[pos][player] - vbd_baseline[pos]
-                    vbd_high[pos][player] = self.proj_points_high[pos][player] - vbd_baseline[pos]
-
-                    # Saturate at 0
-                    vbd[pos][player] = max(vbd[pos][player], 0.0)
-                    vbd_low[pos][player] = max(vbd_low[pos][player], 0.0)
-                    vbd_high[pos][player] = max(vbd_high[pos][player], 0.0)
+                        # Saturate at 0
+                        vbd[pos][player] = max(vbd[pos][player], 0.0)
+                        vbd_low[pos][player] = max(vbd_low[pos][player], 0.0)
+                        vbd_high[pos][player] = max(vbd_high[pos][player], 0.0)
 
             else:
 
