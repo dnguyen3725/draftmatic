@@ -232,9 +232,9 @@ class PlayerDatabase:
 
                 if not player_name in self.players[player_position]:
                     self.players[player_position].append(player_name)
-				
+
     # Rank Players
-    def rank_players(self, drafted_players, n_round):
+    def rank_players(self, drafted_players, n_round, pos_weights):
 	
         # Initialize available player lists to include all players
         self.avail_players = self.players
@@ -271,14 +271,14 @@ class PlayerDatabase:
         # Calculate baseline depth for each position
         pos_baseline = {}
         vbd_baseline = {}
-        self.vbd = {}
-        self.vbd_low = {}
-        self.vbd_high = {}
+        vbd = {}
+        vbd_low = {}
+        vbd_high = {}
         for pos in self.cfg['starters']:
 
-            self.vbd[pos] = {}
-            self.vbd_low[pos] = {}
-            self.vbd_high[pos] = {}
+            vbd[pos] = {}
+            vbd_low[pos] = {}
+            vbd_high[pos] = {}
 
             # Get baseline depth of each position
             pos_baseline[pos] = n_pos_available[pos] - n_pos_drafted[pos]
@@ -298,20 +298,37 @@ class PlayerDatabase:
                 # Calculate vbd for all players in position
                 for player in self.proj_points[pos]:
 
-                    self.vbd[pos][player] = self.proj_points[pos][player] - vbd_baseline[pos]
-                    self.vbd_low[pos][player] = self.proj_points_low[pos][player] - vbd_baseline[pos]
-                    self.vbd_high[pos][player] = self.proj_points_high[pos][player] - vbd_baseline[pos]
+                    vbd[pos][player] = self.proj_points[pos][player] - vbd_baseline[pos]
+                    vbd_low[pos][player] = self.proj_points_low[pos][player] - vbd_baseline[pos]
+                    vbd_high[pos][player] = self.proj_points_high[pos][player] - vbd_baseline[pos]
 
                     # Saturate at 0
-                    self.vbd[pos][player] = max(self.vbd[pos][player], 0.0)
-                    self.vbd_low[pos][player] = max(self.vbd_low[pos][player], 0.0)
-                    self.vbd_high[pos][player] = max(self.vbd_high[pos][player], 0.0)
+                    vbd[pos][player] = max(vbd[pos][player], 0.0)
+                    vbd_low[pos][player] = max(vbd_low[pos][player], 0.0)
+                    vbd_high[pos][player] = max(vbd_high[pos][player], 0.0)
 
             else:
 
                 for player in self.players[pos]:
 
-                    self.vbd[pos][player] = 0.0
-                    self.vbd_low[pos][player] = 0.0
-                    self.vbd_high[pos][player] = 0.0
+                    vbd[pos][player] = 0.0
+                    vbd_low[pos][player] = 0.0
+                    vbd_high[pos][player] = 0.0
                     
+        # Generate ranking scores for all players
+        self.ranking_score = {}
+        for pos in self.cfg['starters']:
+
+            # Ignore positions with negative weights
+            if pos_weights[pos] > 0:
+
+                # Loop through players in position
+                for player in vbd[pos]:
+
+                    self.ranking_score[player] = (self.cfg['distribution_weight'][0]*vbd[pos][player] +
+                                                  self.cfg['distribution_weight'][1]*vbd_low[pos][player] +
+                                                  self.cfg['distribution_weight'][2]*vbd_high[pos][player])
+
+
+        # Sort by ranking score to get rank
+        self.rank = sorted(self.ranking_score, key=self.ranking_score.get, reverse=True)

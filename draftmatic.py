@@ -9,6 +9,7 @@ import sys
 import os
 from playerdatabase import PlayerDatabase
 from draftteam import DraftTeams
+import ipdb
 
 # Set configuration parameters
 def set_config():
@@ -110,8 +111,41 @@ def set_config():
     cfg['baseline_depth'].append(2) # 15
     cfg['baseline_depth'].append(1) # 16
 
+    # Positions allowed to draft in each round
+    cfg['draftable'] = []
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 1
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 2
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 3
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 4
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 5
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 6
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 7
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 8
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 9
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 10
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 11
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 12
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 13
+    cfg['draftable'].append(('IDP')) # 14
+    cfg['draftable'].append(('DST')) # 15
+    cfg['draftable'].append(('K')) # 16
+
+    # Max number of players to draft at each position
+    cfg['draft_max'] = {}
+    cfg['draft_max']['QB'] = 2
+    cfg['draft_max']['RB'] = 5
+    cfg['draft_max']['WR'] = 6
+    cfg['draft_max']['TE'] = 2
+    cfg['draft_max']['K'] = 1
+    cfg['draft_max']['IDP'] = 1
+    cfg['draft_max']['DST'] = 1
+
     # Weight deduction per excess player
     cfg['weight_decrement'] = 0.2
+
+    # Distribution weights
+    # A, low, high
+    cfg['distribution_weight'] = [1.0, 0.0, 0.0]
 
     # Return tuple of configuration parameters
     return cfg
@@ -131,9 +165,10 @@ def main():
         draftteams.add_team(team)
     
     # Startup console
-    print '-'*50
+    print
+    print '*'*50
     print 'DraftMatic!!!'
-    print '-'*50
+    print '*'*50
     print ''
     
     # Main Loop
@@ -142,25 +177,51 @@ def main():
         # Get round number
         n_round = draftteams.round()
 
+        # Get drafter
+        drafter = draftteams.get_drafter()
+
+        # Get player counts
+        pos_counts = draftteams.teams[drafter].get_pos_counts();
+        pos_count_string = ''
+        for pos in cfg['starters']:
+            pos_count_string = pos_count_string+pos+':{}'.format(pos_counts[pos])+' '
+
         # Print round number
         print '-'*50
         print 'Round {}'.format(n_round+1)
+        print '{} is next to draft'.format(drafter)
+        print pos_count_string
         print '-'*50
         print ''
 
         # Get list of drafted players
         drafted_players = draftteams.drafted_players()
 
+        # Get position weights for the next drafter
+        pos_weights = draftteams.teams[drafter].get_pos_weights(n_round)
+
         # Rank players
-        player_db.rank_players(drafted_players, n_round)
+        player_db.rank_players(drafted_players, n_round, pos_weights)
 	
-        # Prompt user for pick
-        print '(''exit'' to quit)'
-        console_inp = raw_input('Enter Pick: ')
+        # Print out rankings short list
+        for i in range(0, 5):
+            print_str = '{}: {} at {} from {}'.format(i+1,
+                                                      player_db.rank[i],
+                                                      player_db.position[player_db.rank[i]],
+                                                      player_db.team[player_db.rank[i]])
+            print print_str
+        print ''
+
+        # Console loop until valid draft command is received
+        while True:
+            
+            # Prompt user for pick
+            print '(''exit'' to quit)'
+            console_inp = raw_input('Enter Pick: ')
 		
-        # Exit on command
-        if console_inp.find('exit') >= 0:
-            break
+            # Exit on command
+            if console_inp.find('exit') >= 0:
+                sys.exit()
 
 if __name__ == '__main__':
   main()
