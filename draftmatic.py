@@ -211,11 +211,14 @@ def main():
         
             # Print out rankings short list
             for i in range(0, n_print_players):
-                print_str = '{}: {} at {} from {} (ADP {})'.format(i+1,
-                    player_db.rank[i],
-                    player_db.position[player_db.rank[i]],
-                    player_db.team[player_db.rank[i]],
-                    player_db.adp[player_db.rank[i]])
+                print_str = '{}:'.format(i+1)
+                print_str = print_str + ' {}'.format(player_db.rank[i])
+                print_str = print_str + ' at {}'.format(player_db.position[player_db.rank[i]])
+                print_str = print_str + ' from {}'.format(player_db.team[player_db.rank[i]])
+                print_str = print_str + ' ('
+                if player_db.rank[i] in player_db.adp:
+                    print_str = print_str + 'ADP{}'.format(player_db.adp[player_db.rank[i]])
+                print_str = print_str + ')'
                 print print_str
         
             
