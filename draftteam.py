@@ -6,7 +6,7 @@
 # Aug, 2015
   
 import os
-import ipdb
+import pdb
 
 class DraftTeams:
 
@@ -39,8 +39,8 @@ class DraftTeams:
     # Determine draft round number
     def round(self):
 
-        # initialize dict of draft rounds
-        next_draft_round = {}
+        # initialize next draft round to max
+        next_draft_round = self.cfg['num_rounds']
 
         # Determine next draft round for each player
         for team in self.teams:
@@ -48,17 +48,12 @@ class DraftTeams:
             # Loop through draft list rounds
             for i in range(0, self.cfg['num_rounds']):
 
-                # If empty draft slot, this is the next draft round for this player 
+                # Save lowest draft slot
                 if self.teams[team].drafted[i] == None:
-                    next_draft_round[team] = i
-                    break
-
-        # Get a player that is drafting this round
-        # Note that this is a random player and not neccessarily the next drafter
-        player_next_draft_round = min(next_draft_round)
+                    next_draft_round = min(i, next_draft_round)
 
         # Return the lowest draft round
-        return next_draft_round[player_next_draft_round]
+        return next_draft_round
 
     # Get next drafter
     def get_drafter(self):
@@ -91,7 +86,13 @@ class DraftTeam:
         
         # Create empty draft list
         self.drafted = [None]*cfg['num_rounds']
-            
+        
+    # Draft player
+    def draft_player(self, n_round, player_name, player_pos):
+    
+        # Add player and position to draft list
+        self.drafted[n_round] = (player_name, player_pos)
+        
     # Get position counts
     def get_pos_counts(self):
 
