@@ -19,6 +19,19 @@ def set_config():
     # Directory of player projection data
     cfg['root_dir'] = '2015_data'
     
+    # Directory of draft team data
+    cfg['team_dir'] = '2015_teams'
+    
+    # Player projection files
+    cfg['f_proj'] = {}
+    cfg['f_proj']['QB'] = 'FantasyPros_Fantasy_Football_Rankings_QB.xls'
+    cfg['f_proj']['RB'] = 'FantasyPros_Fantasy_Football_Rankings_RB.xls'
+    cfg['f_proj']['WR'] = 'FantasyPros_Fantasy_Football_Rankings_WR.xls'
+    cfg['f_proj']['TE'] = 'FantasyPros_Fantasy_Football_Rankings_TE.xls'
+    cfg['f_proj']['K']  = 'FantasyPros_Fantasy_Football_Rankings_K.xls'
+    cfg['f_proj']['DST']  = 'FantasySharks_DST.xls'
+    cfg['f_proj']['IDP']  = 'FantasySharks_IDP.xls'
+    
     # Draft teams in order
     cfg['teams'] = []
     cfg['teams'].append('JoshHathaway')
@@ -47,50 +60,64 @@ def set_config():
     cfg['starters']['IDP'] = 1
     cfg['starters']['DST'] = 1
     
-    # League scoring (pts/unit)
-    cfg['pts'] = {}
-    cfg['pts']['pass_att'] = 0.0
-    cfg['pts']['pass_cmp'] = 0.0
-    cfg['pts']['pass_yds'] = 1.0/25.0
-    cfg['pts']['pass_tds'] = 4.0
-    cfg['pts']['pass_ints'] = -1.0
-    cfg['pts']['rush_att'] = 0.0
-    cfg['pts']['rush_yds'] = 1.0/10.0
-    cfg['pts']['rush_tds'] = 6.0
-    cfg['pts']['rec_att'] = 0.0
-    cfg['pts']['rec_yds'] = 1.0/10.0
-    cfg['pts']['rec_tds'] = 6.0
-    cfg['pts']['fumbles'] = -2.0
+    # Offensive player scoring (pts/unit)
+    cfg['off_pts'] = {}
+    cfg['off_pts']['pass_att'] = 0.0
+    cfg['off_pts']['pass_cmp'] = 0.0
+    cfg['off_pts']['pass_yds'] = 1.0/25.0
+    cfg['off_pts']['pass_tds'] = 4.0
+    cfg['off_pts']['pass_ints'] = -1.0
+    cfg['off_pts']['rush_att'] = 0.0
+    cfg['off_pts']['rush_yds'] = 1.0/10.0
+    cfg['off_pts']['rush_tds'] = 6.0
+    cfg['off_pts']['rec_att'] = 0.0
+    cfg['off_pts']['rec_yds'] = 1.0/10.0
+    cfg['off_pts']['rec_tds'] = 6.0
+    cfg['off_pts']['fumbles'] = -2.0
     
-    # Include Kicker scoring
-    if True:
-        cfg['pts']['fg'] = 3.0
-        cfg['pts']['fga'] = 0.0
-        cfg['pts']['xpt'] = 1.0
-    else:
-        cfg['pts']['fg'] = 0.0
-        cfg['pts']['fga'] = 0.0
-        cfg['pts']['xpt'] = 0.0
+    # Kicker scoring
+    cfg['off_pts']['fg'] = 3.0
+    cfg['off_pts']['fga'] = 0.0
+    cfg['off_pts']['xpt'] = 1.0
     
-    # Include Individual defensive scoring
-    if True:
-        cfg['pts']['sacks'] = 2.0
-        cfg['pts']['force_fumb'] = 0.0
-        cfg['pts']['rec_fumb'] = 0.0
-        cfg['pts']['int'] = 3.0
-        cfg['pts']['pass_def'] = 0.0
-        cfg['pts']['tackles'] = 1.0
-        cfg['pts']['assists'] = 0.5
-        cfg['pts']['def_td'] = 6.0
-    else:
-        cfg['pts']['sacks'] = 0.0
-        cfg['pts']['force_fumb'] = 0.0
-        cfg['pts']['rec_fumb'] = 0.0
-        cfg['pts']['int'] = 0.0
-        cfg['pts']['pass_def'] = 0.0
-        cfg['pts']['tackles'] = 0.0
-        cfg['pts']['assists'] = 0.0
-        cfg['pts']['def_td'] = 0.0
+    # Defense/Special Teams Scoring
+    cfg['DST_pts'] = {}
+    cfg['DST_pts']['Yds Allowed'] = 0.0
+    cfg['DST_pts']['0-99'] = 0.0
+    cfg['DST_pts']['100-199'] = 0.0
+    cfg['DST_pts']['200-299'] = 0.0
+    cfg['DST_pts']['300-349'] = 0.0
+    cfg['DST_pts']['350-399'] = 0.0
+    cfg['DST_pts']['400-449'] = 0.0
+    cfg['DST_pts']['450-499'] = 0.0
+    cfg['DST_pts']['500-549'] = 0.0
+    cfg['DST_pts']['550+'] = 0.0
+    cfg['DST_pts']['Pts Agn'] = 0.0
+    cfg['DST_pts']['0'] = 10
+    cfg['DST_pts']['1-6'] = 7
+    cfg['DST_pts']['7-13'] = 4
+    cfg['DST_pts']['14-17'] = 1
+    cfg['DST_pts']['18-20'] = 1
+    cfg['DST_pts']['21-27'] = 0
+    cfg['DST_pts']['28-34'] = -1
+    cfg['DST_pts']['35-45'] = -4
+    cfg['DST_pts']['46+'] = -4
+    cfg['DST_pts']['Scks'] = 1
+    cfg['DST_pts']['Int'] = 2
+    cfg['DST_pts']['Fum'] = 2
+    cfg['DST_pts']['DefTD'] = 6
+    cfg['DST_pts']['Safts'] = 2
+    
+    # Individual Defensive Player scoring
+    cfg['IDP_pts'] = {}
+    cfg['IDP_pts']['Tack'] = 1.0
+    cfg['IDP_pts']['Asst'] = 0.5
+    cfg['IDP_pts']['Scks'] = 2.0
+    cfg['IDP_pts']['PassDef'] = 1.0
+    cfg['IDP_pts']['Int'] = 2.0
+    cfg['IDP_pts']['FumFrc'] = 2.0
+    cfg['IDP_pts']['Fum'] = 2.0
+    cfg['IDP_pts']['DefTD'] = 6.0
         
     # Number of rounds to establish baseline depth
     cfg['baseline_depth'] = []
@@ -113,22 +140,22 @@ def set_config():
 
     # Positions allowed to draft in each round
     cfg['draftable'] = []
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 1
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 2
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 3
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 4
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 5
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 6
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 7
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 8
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 9
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 10
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 11
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 12
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 13
-    cfg['draftable'].append(('IDP')) # 14
-    cfg['draftable'].append(('DST')) # 15
-    cfg['draftable'].append(('K')) # 16
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 1
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 2
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 3
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 4
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 5
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 6
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 7
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 8
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 9
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 10
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 11
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 12
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 13
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 14
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 15
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP','DST','K')) # 16
 
     # Max number of players to draft at each position
     cfg['draft_max'] = {}
@@ -137,8 +164,8 @@ def set_config():
     cfg['draft_max']['WR'] = 6
     cfg['draft_max']['TE'] = 2
     cfg['draft_max']['K'] = 1
-    cfg['draft_max']['IDP'] = 1
-    cfg['draft_max']['DST'] = 1
+    cfg['draft_max']['IDP'] = 2
+    cfg['draft_max']['DST'] = 2
 
     # Weight deduction per excess player
     cfg['weight_decrement'] = 0.2
