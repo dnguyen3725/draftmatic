@@ -274,14 +274,12 @@ class PlayerDatabase:
     def import_adp(self):
 	
         print('Parsing Average Draft Position Data')
-	
-        f_adp = 'FantasyPros_2015_Overall_ADP_Rankings.xls'
 		
         # Create empty average draft position dict
         self.adp = {}
 		
         # Get full filename
-        fname = os.path.join(self.cfg['root_dir'],f_adp)
+        fname = os.path.join(self.cfg['root_dir'],self.cfg['f_adp'])
         fname = os.path.abspath(fname)
 			
         # Read in xls workbook
@@ -339,7 +337,6 @@ class PlayerDatabase:
 
                 # Add to players list if not already there
                 if not player_position in self.players:
-                    pdb.set_trace()
                     self.players[player_position] = []
 
                 if not player_name in self.players[player_position]:

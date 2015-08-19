@@ -6,6 +6,7 @@
 # Aug, 2015
   
 import os
+import csv
 import pdb
 
 class DraftTeams:
@@ -17,6 +18,14 @@ class DraftTeams:
 
         # Create empty list of teams
         self.teams = {}
+
+    # Reset state
+    def reset(self):
+    
+        for team in self.teams:
+            
+            # Empty draft list
+            self.teams[team].drafted = [None]*self.cfg['num_rounds']
 
     # Add a draft team
     def add_team(self, teamname):
@@ -55,9 +64,37 @@ class DraftTeams:
         # Return the lowest draft round
         return next_draft_round
 
+    # Get pick number
+    def get_pick_num(self):
+
+        # Determine round number
+        n_round = self.round()
+
+        # Determine if it is an ascending round or a descending round
+        # Event rounds are ascending
+        is_ascending_round = (n_round % 2) == 0
+
+        if is_ascending_round:
+            # Loop drafters to find someone that needs to draft this round
+            for i in range(0, len(self.cfg['teams'])):
+                drafter = self.cfg['teams'][i]
+                if self.teams[drafter].drafted[n_round] == None:
+                    return i
+        else:
+            # Loop backwards through drafters to find someone that needs to draft this round
+            for i in range(0, len(self.cfg['teams'])):
+                drafter = self.cfg['teams'][-(i+1)]
+                if self.teams[drafter].drafted[n_round] == None:
+                    return i
+          
+    # Get overall pick number
+    def get_overall_pick_num(self):
+
+        return self.round()*len(self.cfg['teams']) + self.get_pick_num()
+    
     # Get next drafter
     def get_drafter(self):
-
+    
         # Determine round number
         n_round = self.round()
 
@@ -75,7 +112,53 @@ class DraftTeams:
             for drafter in reversed(self.cfg['teams']):
                 if self.teams[drafter].drafted[n_round] == None:
                     return drafter
+     
+    def write_state(self):
+        
+        # Loop through each team
+        for team in self.teams:
+        
+            # Get filename
+            fname = os.path.join(self.cfg['team_dir'],team+'.csv')
+            fname = os.path.abspath(fname)
+        
+            # Open file for writing
+            f = open(fname, 'wb')
+            writer = csv.writer(f)
             
+            # Loop through draft picks
+            for i in range(0, len(self.teams[team].drafted)):
+            
+                if self.teams[team].drafted[i] != None:
+                    writer.writerows([[i,self.teams[team].drafted[i][0],self.teams[team].drafted[i][1]]])
+        
+            # Close file
+            f.close
+            
+    def load_state(self):
+    
+        # Loop through each team
+        for team in self.teams:
+        
+            # Empty draft list
+            self.teams[team].drafted = [None]*self.cfg['num_rounds']
+        
+            # Get filename
+            fname = os.path.join(self.cfg['team_dir'],team+'.csv')
+            fname = os.path.abspath(fname)
+        
+            # Open file for reading
+            f = open(fname, 'rb')
+            reader = csv.reader(f)
+            
+            # Loop through draft picks in file
+            for row in reader:
+            
+                # Draft player
+                self.teams[team].draft_player(int(row[0]), row[1], row[2])
+                
+            # Close file
+            f.close
 
 class DraftTeam:
 
@@ -85,7 +168,7 @@ class DraftTeam:
         self.cfg = cfg
         
         # Create empty draft list
-        self.drafted = [None]*cfg['num_rounds']
+        self.drafted = [None]*self.cfg['num_rounds']
         
     # Draft player
     def draft_player(self, n_round, player_name, player_pos):
