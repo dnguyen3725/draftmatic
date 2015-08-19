@@ -348,6 +348,9 @@ class PlayerDatabase:
         # Initialize available player lists to include all players
         self.avail_players = copy.deepcopy(self.players)
         self.avail_adp = copy.deepcopy(self.adp)
+        self.avail_proj_points = copy.deepcopy(self.proj_points)
+        self.avail_proj_points_low = copy.deepcopy(self.proj_points_low)
+        self.avail_proj_points_high = copy.deepcopy(self.proj_points_high)
 
         # Create counters for drafted positions
         n_pos_drafted = {}
@@ -361,11 +364,15 @@ class PlayerDatabase:
             
             n_pos_drafted[self.position[player]] += 1
             self.avail_players[self.position[player]].remove(player)
+            del self.avail_proj_points[self.position[player]][player]
+            del self.avail_proj_points_low[self.position[player]][player]
+            del self.avail_proj_points_high[self.position[player]][player]
             del self.avail_adp[player]
 
         # Number of players deep to look for baseline player
         n_baseline_player = (n_round + self.cfg['baseline_depth'][n_round])*len(self.cfg['teams'])
-
+        n_baseline_player = min(n_baseline_player, len(self.adp))
+        
         # Sort available players by adp
         players_adp_sorted = sorted(self.adp, key=self.adp.get)
 
@@ -395,28 +402,31 @@ class PlayerDatabase:
             # Make sure depth is at least 1 so vbd is scored for a minimum of
             # 1 person
             pos_baseline[pos] = max(pos_baseline[pos], 1)
+            
+            # Make sure baseline isn't longer than total available players
+            pos_baseline[pos] = min(pos_baseline[pos], len(self.avail_proj_points[pos])-1)
 
             # Calculate VBD if projected points are available
-            if pos in self.proj_points:
+            if pos in self.avail_proj_points:
 
                 # Sort players in position group from highest to lowest by avg fpts
-                players_fpts_sorted = sorted(self.proj_points[pos], key=self.proj_points[pos].get, reverse=True)
+                players_fpts_sorted = sorted(self.avail_proj_points[pos], key=self.avail_proj_points[pos].get, reverse=True)
 
                 # Get basline score
                 vbd_baseline[pos] = self.proj_points[pos][players_fpts_sorted[pos_baseline[pos]]]
 
                 # Calculate vbd for all available players in position
-                for player in self.proj_points[pos]:
+                for player in self.avail_proj_points[pos]:
                     
                     if player in self.avail_players[pos]:
                     
-                        vbd_avg = self.proj_points[pos][player] - vbd_baseline[pos]
-                        vbd_low = self.proj_points_low[pos][player] - vbd_baseline[pos]
-                        vbd_high = self.proj_points_high[pos][player] - vbd_baseline[pos]
+                        vbd_avg = self.avail_proj_points[pos][player] - vbd_baseline[pos]
+                        vbd_low = self.avail_proj_points_low[pos][player] - vbd_baseline[pos]
+                        vbd_high = self.avail_proj_points_high[pos][player] - vbd_baseline[pos]
                         self.vbd[pos][player] = (self.cfg['distribution_weight'][0]*vbd_avg +
                                                  self.cfg['distribution_weight'][1]*vbd_low +
                                                  self.cfg['distribution_weight'][2]*vbd_high)
-                    
+        
         # Generate ranking scores for all players
         self.ranking_score = {}
         for pos in self.cfg['starters']:
