@@ -20,23 +20,14 @@ class PlayerDatabase:
         # Import player projection data
         self.import_player_projections()
         
+        # Import defensive projection data
+        self.import_defensive_projections()
+        
         # Import average draft position data
         self.import_adp()
-        
-        # Initialize empty teams dict
-        self.teams = {}
-	
-        self.players['IDP'] = []
 
     # Import player projections from xls files
     def import_player_projections(self):
-		
-        f_projections = {}
-        f_projections['QB'] = 'FantasyPros_Fantasy_Football_Rankings_QB.xls'
-        f_projections['RB'] = 'FantasyPros_Fantasy_Football_Rankings_RB.xls'
-        f_projections['WR'] = 'FantasyPros_Fantasy_Football_Rankings_WR.xls'
-        f_projections['TE'] = 'FantasyPros_Fantasy_Football_Rankings_TE.xls'
-        f_projections['K']  = 'FantasyPros_Fantasy_Football_Rankings_K.xls'
         
         # Create empty team dict
         self.team = {}
@@ -52,7 +43,9 @@ class PlayerDatabase:
         self.proj_points_low = {}
         self.proj_points_high = {}
 
-        for pos, filename in f_projections.items():
+        for pos in ('QB','RB','WR','TE','K'):
+        
+            filename = self.cfg['f_proj'][pos]
                 
             print('Parsing ' + pos + ' Projection Data')
                 
@@ -95,13 +88,17 @@ class PlayerDatabase:
                     found_header = True
                                         
                 # After header row is found, process remaining player data
-		elif found_header:
+                elif found_header:
                         
                     # Player name
                     player_name = xl_sheet.cell(row_idx, 0).value.encode('utf-8')
 					
                     # Team
                     team_name = xl_sheet.cell(row_idx, 1).value.encode('utf-8')
+                    
+                    # If player already exists append position to name
+                    if player_name in self.position:
+                        player_name = player_name + ' (' + pos + ')'
 					
                     # Add team entry for player
                     self.team[player_name] = team_name
@@ -126,7 +123,7 @@ class PlayerDatabase:
                                 
                             # Save average default projected fantasy points
                             # Average is indicated by no Low or High keyword
-			    if len(hdr_split) == 1:
+                            if len(hdr_split) == 1:
                                 fpts[3] = xl_sheet.cell(row_idx, i).value
                                 
                         else:
@@ -135,7 +132,7 @@ class PlayerDatabase:
                             projected_value = xl_sheet.cell(row_idx, i).value
                             
                             # Get points per action for category
-                            points_per = self.cfg['pts'][hdr_split[0]]
+                            points_per = self.cfg['off_pts'][hdr_split[0]]
                             
                             # Determine if this contributes towards avg, low, or high total
                             if len(hdr_split) == 1:
@@ -167,18 +164,122 @@ class PlayerDatabase:
                     self.proj_points_low[pos][player_name] = fpts[1]
                     self.proj_points_high[pos][player_name] = fpts[2]
 	
+	# Import defensive projections from xls files
+    def import_defensive_projections(self):
+
+        for pos in ('DST','IDP'):
+        
+            filename = self.cfg['f_proj'][pos]
+                
+            print('Parsing ' + pos + ' Projection Data')
+            
+            # Create empty list of players if this is first instance of position
+            if not pos in self.players:
+                self.players[pos] = []
+                
+            # Create empty dict of projected points if this is first instance of position
+            if not pos in self.proj_points:
+                self.proj_points[pos] = {}
+                self.proj_points_low[pos] = {}
+                self.proj_points_high[pos] = {}
+            
+            # Get full filename
+            fname = os.path.join(self.cfg['root_dir'],filename)
+            fname = os.path.abspath(fname)
+            
+            # Read in xls workbook
+            xl_workbook = xlrd.open_workbook(fname)
+                
+            # Read in first sheet of workbook
+            xl_sheet = xl_workbook.sheet_by_index(0)
+                
+            # Number of columns
+            num_cols = xl_sheet.ncols
+                
+            # Initialize flag to search for header row
+            found_header = False
+                
+            # Iterate through rows of xls file
+            for row_idx in range(0, xl_sheet.nrows):
+                        
+                # Scan through file looking for header row	
+                if (not found_header) and (xl_sheet.cell(row_idx, 0).value.find('Rank') >= 0):
+                                
+                    # Header row found, save header names
+                    hdr = []
+                    for col_idx in range(0, num_cols): 
+                                        
+                        hdr.append(xl_sheet.cell(row_idx, col_idx).value.encode('utf-8').strip())
+                                        
+                    found_header = True
+                                        
+                # After header row is found, process remaining player data
+                elif found_header:
+                    
+                    # Player name
+                    first_name = xl_sheet.cell(row_idx, 2).value.encode('utf-8').strip()
+                    last_name = xl_sheet.cell(row_idx, 1).value.encode('utf-8').strip()
+                    player_name = first_name + ' ' + last_name
+					
+                    # Team
+                    team_name = xl_sheet.cell(row_idx, 3).value.encode('utf-8')
+					
+					# If player already exists append position to name
+                    if player_name in self.position:
+                        player_name = player_name + ' (' + pos + ')'
+					
+                    # Add team entry for player
+                    self.team[player_name] = team_name
+		
+                    # Add entry for position lookup
+                    self.position[player_name] = pos
+                    
+                    # Add player to position list
+                    self.players[pos].append(player_name)
+					
+                    # Get projected points for season
+                    # Avg, Low, High, Default
+                    fpts = [0, 0, 0, 0]
+					
+                    for i in range(5,len(hdr)):
+                        
+                        # Entry is for default projected fantasy points
+                        if hdr[i] == 'Pts':
+                                
+                            # Save average default projected fantasy points
+                            fpts[3] = xl_sheet.cell(row_idx, i).value
+                                
+                        else:
+			       			
+                            # Get projected value for category
+                            projected_value = xl_sheet.cell(row_idx, i).value
+                            
+                            # Get points per action for category
+                            points_per = self.cfg[pos+'_pts'][hdr[i]]
+							
+                            # Accumulate projected fantasy points
+                            fpts[0] = fpts[0] + projected_value*points_per
+		
+		            # Save off average as high and low since there is no range data
+		            fpts[1] = fpts[0]
+		            fpts[2] = fpts[0]
+		
+                    # Store projected fantasy points for this player
+                    self.proj_points[pos][player_name] = fpts[0]
+                    self.proj_points_low[pos][player_name] = fpts[1]
+                    self.proj_points_high[pos][player_name] = fpts[2]
+		    
+	
     # Import average draft positions
     def import_adp(self):
 	
         print('Parsing Average Draft Position Data')
-	
-        f_adp = 'FantasyPros_2015_Overall_ADP_Rankings.xls'
 		
         # Create empty average draft position dict
         self.adp = {}
 		
         # Get full filename
-        fname = os.path.join(self.cfg['root_dir'],f_adp)
+        fname = os.path.join(self.cfg['root_dir'],self.cfg['f_adp'])
         fname = os.path.abspath(fname)
 			
         # Read in xls workbook
@@ -216,6 +317,12 @@ class PlayerDatabase:
 				
                 # Team
                 player_team = xl_sheet.cell(row_idx, 2).value.encode('utf-8')
+                
+                # Check if position appended version of name has been used
+                appended_player_name = player_name + ' (' + player_position + ')'
+                if appended_player_name in self.position:
+                    # Use appended player name
+                    player_name = appended_player_name
 
                 # Add ADP to list
                 self.adp[player_name] = adp
@@ -241,6 +348,9 @@ class PlayerDatabase:
         # Initialize available player lists to include all players
         self.avail_players = copy.deepcopy(self.players)
         self.avail_adp = copy.deepcopy(self.adp)
+        self.avail_proj_points = copy.deepcopy(self.proj_points)
+        self.avail_proj_points_low = copy.deepcopy(self.proj_points_low)
+        self.avail_proj_points_high = copy.deepcopy(self.proj_points_high)
 
         # Create counters for drafted positions
         n_pos_drafted = {}
@@ -254,11 +364,15 @@ class PlayerDatabase:
             
             n_pos_drafted[self.position[player]] += 1
             self.avail_players[self.position[player]].remove(player)
+            del self.avail_proj_points[self.position[player]][player]
+            del self.avail_proj_points_low[self.position[player]][player]
+            del self.avail_proj_points_high[self.position[player]][player]
             del self.avail_adp[player]
 
         # Number of players deep to look for baseline player
         n_baseline_player = (n_round + self.cfg['baseline_depth'][n_round])*len(self.cfg['teams'])
-
+        n_baseline_player = min(n_baseline_player, len(self.adp))
+        
         # Sort available players by adp
         players_adp_sorted = sorted(self.adp, key=self.adp.get)
 
@@ -273,52 +387,47 @@ class PlayerDatabase:
         # Calculate baseline depth for each position
         pos_baseline = {}
         vbd_baseline = {}
-        vbd = {}
-        vbd_low = {}
-        vbd_high = {}
+        self.vbd = {}
         for pos in self.cfg['starters']:
 
-            vbd[pos] = {}
-            vbd_low[pos] = {}
-            vbd_high[pos] = {}
+            self.vbd[pos] = {}
+            
+            # Saturate baseline at the max number of players at that position
+            n_pos_available[pos] = min(n_pos_available[pos], 
+                                       self.cfg['draft_max'][pos]*len(self.cfg['teams']))
+            
 
             # Get baseline depth of each position
             pos_baseline[pos] = n_pos_available[pos] - n_pos_drafted[pos]
 
-            # Make sure depth is not negative
-            pos_baseline[pos] = max(pos_baseline[pos], 0)
+            # Make sure depth is at least 1 so vbd is scored for a minimum of
+            # 1 person
+            pos_baseline[pos] = max(pos_baseline[pos], 1)
+            
+            # Make sure baseline isn't longer than total available players
+            pos_baseline[pos] = min(pos_baseline[pos], len(self.avail_proj_points[pos])-1)
 
             # Calculate VBD if projected points are available
-            if pos in self.proj_points:
+            if pos in self.avail_proj_points:
 
                 # Sort players in position group from highest to lowest by avg fpts
-                players_fpts_sorted = sorted(self.proj_points[pos], key=self.proj_points[pos].get, reverse=True)
+                players_fpts_sorted = sorted(self.avail_proj_points[pos], key=self.avail_proj_points[pos].get, reverse=True)
 
                 # Get basline score
                 vbd_baseline[pos] = self.proj_points[pos][players_fpts_sorted[pos_baseline[pos]]]
 
                 # Calculate vbd for all available players in position
-                for player in self.proj_points[pos]:
+                for player in self.avail_proj_points[pos]:
                     
                     if player in self.avail_players[pos]:
                     
-                        vbd[pos][player] = self.proj_points[pos][player] - vbd_baseline[pos]
-                        vbd_low[pos][player] = self.proj_points_low[pos][player] - vbd_baseline[pos]
-                        vbd_high[pos][player] = self.proj_points_high[pos][player] - vbd_baseline[pos]
-
-                        # Saturate at 0
-                        vbd[pos][player] = max(vbd[pos][player], 0.0)
-                        vbd_low[pos][player] = max(vbd_low[pos][player], 0.0)
-                        vbd_high[pos][player] = max(vbd_high[pos][player], 0.0)
-
-            else:
-
-                for player in self.players[pos]:
-
-                    vbd[pos][player] = 0.0
-                    vbd_low[pos][player] = 0.0
-                    vbd_high[pos][player] = 0.0
-                    
+                        vbd_avg = self.avail_proj_points[pos][player] - vbd_baseline[pos]
+                        vbd_low = self.avail_proj_points_low[pos][player] - vbd_baseline[pos]
+                        vbd_high = self.avail_proj_points_high[pos][player] - vbd_baseline[pos]
+                        self.vbd[pos][player] = (self.cfg['distribution_weight'][0]*vbd_avg +
+                                                 self.cfg['distribution_weight'][1]*vbd_low +
+                                                 self.cfg['distribution_weight'][2]*vbd_high)
+        
         # Generate ranking scores for all players
         self.ranking_score = {}
         for pos in self.cfg['starters']:
@@ -327,12 +436,33 @@ class PlayerDatabase:
             if pos_weights[pos] > 0:
 
                 # Loop through players in position
-                for player in vbd[pos]:
+                for player in self.vbd[pos]:
 
-                    self.ranking_score[player] = (self.cfg['distribution_weight'][0]*vbd[pos][player] +
-                                                  self.cfg['distribution_weight'][1]*vbd_low[pos][player] +
-                                                  self.cfg['distribution_weight'][2]*vbd_high[pos][player])
+                    # Only rank players with non-negative vbd
+                    # Negative VBD is meaningless since it is below the baseline
+                    if self.vbd[pos][player] >= 0.0:
+                        self.ranking_score[player] = self.vbd[pos][player]
 
 
         # Sort by ranking score to get rank
         self.rank = sorted(self.ranking_score, key=self.ranking_score.get, reverse=True)
+       
+    # Get value based draft score 
+    def get_vbd(self, player):
+        
+        return self.vbd[self.position[player]][player]
+        
+    # Get average expected points per game
+    def get_fpts_avg(self, player):
+    
+        return self.proj_points_low[self.position[player]][player]/self.cfg['num_games_per_season']
+        
+    # Get low expected points per game
+    def get_fpts_low(self, player):
+    
+        return self.proj_points_low[self.position[player]][player]/self.cfg['num_games_per_season']
+        
+    # Get high expected points per game
+    def get_fpts_high(self, player):
+    
+        return self.proj_points_high[self.position[player]][player]/self.cfg['num_games_per_season']
