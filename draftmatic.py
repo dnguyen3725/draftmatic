@@ -128,19 +128,19 @@ def set_config():
     cfg['baseline_depth'].append(8) # 1
     cfg['baseline_depth'].append(7) # 2
     cfg['baseline_depth'].append(6) # 3
-    cfg['baseline_depth'].append(6) # 4
-    cfg['baseline_depth'].append(6) # 5
-    cfg['baseline_depth'].append(6) # 6
-    cfg['baseline_depth'].append(6) # 7
-    cfg['baseline_depth'].append(6) # 8
-    cfg['baseline_depth'].append(6) # 9
-    cfg['baseline_depth'].append(6) # 10
-    cfg['baseline_depth'].append(6) # 11
-    cfg['baseline_depth'].append(5) # 12
+    cfg['baseline_depth'].append(5) # 4
+    cfg['baseline_depth'].append(4) # 5
+    cfg['baseline_depth'].append(4) # 6
+    cfg['baseline_depth'].append(4) # 7
+    cfg['baseline_depth'].append(4) # 8
+    cfg['baseline_depth'].append(4) # 9
+    cfg['baseline_depth'].append(4) # 10
+    cfg['baseline_depth'].append(4) # 11
+    cfg['baseline_depth'].append(4) # 12
     cfg['baseline_depth'].append(4) # 13
-    cfg['baseline_depth'].append(3) # 14
-    cfg['baseline_depth'].append(2) # 15
-    cfg['baseline_depth'].append(1) # 16
+    cfg['baseline_depth'].append(4) # 14
+    cfg['baseline_depth'].append(4) # 15
+    cfg['baseline_depth'].append(4) # 16
 
     # Positions allowed to draft in each round
     cfg['draftable'] = []
@@ -176,10 +176,52 @@ def set_config():
 
     # Distribution weights
     # A, low, high
-    cfg['distribution_weight'] = [1.0, 0.0, 0.0]
+    cfg['distribution_weight'] = [0.4, 0.4, 0.2]
+    
+    # Number of games in season
+    cfg['num_games_per_season'] = 13
 
     # Return tuple of configuration parameters
     return cfg
+
+# Print player summary
+def print_player_summary(player_db, n_pick, player):
+    
+    print_str = '{}'.format(n_pick+1)
+    print_str = print_str + ' ({:.1f}):'.format(player_db.get_vbd(player))
+    print_str = print_str + ' {}'.format(player)
+    print_str = print_str + ' at {}'.format(player_db.position[player])
+    print_str = print_str + ' from {}'.format(player_db.team[player])
+    print_str = print_str + ' ('
+    if player in player_db.adp:
+        print_str = print_str + 'ADP{}, '.format(player_db.adp[player])
+    print_str = print_str + '{:.1f}-{:.1f} exp pts/game'.format(player_db.get_fpts_low(player),
+                                                        player_db.get_fpts_high(player))
+    print_str = print_str + ')'
+    print print_str
+
+# Print team summary
+def print_team_summary(cfg, player_db, draftteams, drafter):
+    
+    # Initialize player count string
+    pos_count_string = ''
+    
+    # Loop over the positions
+    for pos in cfg['starters']:
+    
+        # Get player list at the position
+        player_list = draftteams.teams[drafter].get_players(pos)
+        
+        # Print out player list
+        if len(player_list) > 0:
+            print pos+':'
+            for i in range(0, len(player_list)):
+                print '  '+player_list[i]+' ({:.1f}-{:.1f} exp pts/game)'.format(player_db.get_fpts_low(player_list[i]),
+                                                                              player_db.get_fpts_high(player_list[i]))
+        
+        pos_count_string = pos_count_string+pos+':{}'.format(len(player_list))+' '
+        
+    print pos_count_string
 
 # Main Loop
 def main():
@@ -200,10 +242,10 @@ def main():
     
     # Startup console
     print
+    print ''
     print '*'*50
     print 'DraftMatic!!!'
     print '*'*50
-    print ''
     
     # Main Loop
     while True:
@@ -220,21 +262,7 @@ def main():
 
         # Get drafter
         drafter = draftteams.get_drafter()
-
-        # Get player counts
-        pos_counts = draftteams.teams[drafter].get_pos_counts();
-        pos_count_string = ''
-        for pos in cfg['starters']:
-            pos_count_string = pos_count_string+pos+':{}'.format(pos_counts[pos])+' '
-
-        # Print round number
-        print '-'*50
-        print 'Round {}-{} ({})'.format(n_round+1,n_pick+1,n_overall_pick+1)
-        print '{} is next to draft'.format(drafter)
-        print pos_count_string
-        print '-'*50
-        print ''
-
+        
         # Get list of drafted players
         drafted_players = draftteams.drafted_players()
 
@@ -244,24 +272,25 @@ def main():
         # Rank players
         player_db.rank_players(drafted_players, n_round, pos_weights)
 	
-        # Only print 1 ranking by default
-        n_print_players = 1
+        # Only print 5 ranking by default
+        n_print_players = 5
 
         # Console loop until valid draft command is received
         while True:
         
-            # Print out rankings short list
-            for i in range(0, n_print_players):
-                print_str = '{}:'.format(n_overall_pick+i+1)
-                print_str = print_str + ' {}'.format(player_db.rank[i])
-                print_str = print_str + ' at {}'.format(player_db.position[player_db.rank[i]])
-                print_str = print_str + ' from {}'.format(player_db.team[player_db.rank[i]])
-                print_str = print_str + ' ('
-                if player_db.rank[i] in player_db.adp:
-                    print_str = print_str + 'ADP{}'.format(player_db.adp[player_db.rank[i]])
-                print_str = print_str + ')'
-                print print_str
+            # Print round number
+            print ''
+            print '-'*50
+            print 'Round {}-{} ({})'.format(n_round+1,n_pick+1,n_overall_pick+1)
+            print '{} is next to draft'.format(drafter)
+            print_team_summary(cfg, player_db, draftteams, drafter)
+            print '-'*50
+            print ''
         
+            # Print out rankings short list
+            n_print_players = min(n_print_players, len(player_db.rank))
+            for i in range(0, n_print_players):
+                print_player_summary(player_db, n_overall_pick+i, player_db.rank[i])
             
             # Prompt user for pick
             print ''

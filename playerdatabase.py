@@ -395,6 +395,7 @@ class PlayerDatabase:
             # Saturate baseline at the max number of players at that position
             n_pos_available[pos] = min(n_pos_available[pos], 
                                        self.cfg['draft_max'][pos]*len(self.cfg['teams']))
+            
 
             # Get baseline depth of each position
             pos_baseline[pos] = n_pos_available[pos] - n_pos_drafted[pos]
@@ -445,3 +446,23 @@ class PlayerDatabase:
 
         # Sort by ranking score to get rank
         self.rank = sorted(self.ranking_score, key=self.ranking_score.get, reverse=True)
+       
+    # Get value based draft score 
+    def get_vbd(self, player):
+        
+        return self.vbd[self.position[player]][player]
+        
+    # Get average expected points per game
+    def get_fpts_avg(self, player):
+    
+        return self.proj_points_low[self.position[player]][player]/self.cfg['num_games_per_season']
+        
+    # Get low expected points per game
+    def get_fpts_low(self, player):
+    
+        return self.proj_points_low[self.position[player]][player]/self.cfg['num_games_per_season']
+        
+    # Get high expected points per game
+    def get_fpts_high(self, player):
+    
+        return self.proj_points_high[self.position[player]][player]/self.cfg['num_games_per_season']

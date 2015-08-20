@@ -182,15 +182,28 @@ class DraftTeam:
         # Initialize counters for positions to 0
         pos_counts = {}
         for pos in self.cfg['starters']:
-            pos_counts[pos] = 0
-
-        # Count players in each position
-        for player in self.drafted:
-            if not player == None:
-                pos_counts[player[1]] += 1
+            
+            player_list = self.get_players(pos)
+            pos_counts[pos] = len(player_list)
 
         # Return player counts
         return pos_counts
+        
+    # Get player lists
+    def get_players(self, pos):
+        
+        player_list = []
+        
+        for i in range(0, len(self.drafted)):
+        
+            if self.drafted[i] != None:
+            
+                if self.drafted[i][1] == pos:
+                
+                    player_list.append(self.drafted[i][0])
+                    
+        return player_list
+        
 
     # Generate position weights
     def get_pos_weights(self, n_round):
@@ -209,7 +222,7 @@ class DraftTeam:
                 pos_weights[pos] = -1.0
 
             # Check if number of players at position is exceeded
-            elif pos_counts[pos] > self.cfg['draft_max'][pos]:
+            elif pos_counts[pos] >= self.cfg['draft_max'][pos]:
 
                 # Set weight to undraftable
                 pos_weights[pos] = -1.0
