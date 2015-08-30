@@ -11,7 +11,7 @@ import copy
 import pdb
 
 class PlayerDatabase:
-
+    
     # Constructor
     def __init__(self, cfg):
 	
@@ -362,7 +362,7 @@ class PlayerDatabase:
                     self.proj_points_high[player_position][player_name] = 0.0
 
     # Rank Players
-    def rank_players(self, drafted_players, n_round, pos_weights):
+    def rank_players(self, draftteams, drafted_players, n_round, pos_weights):
         
         # Initialize available player lists to include all players
         self.avail_players = copy.deepcopy(self.players)
@@ -411,11 +411,19 @@ class PlayerDatabase:
 
             self.vbd[pos] = {}
             
-            # Saturate baseline at the max number of players at that position
-            n_pos_available[pos] = min(n_pos_available[pos], 
-                                       self.cfg['draft_max'][pos]*len(self.cfg['teams']))
+            # Calculate max number of players expected to be drafted at position
+            max_expected_drafted = 0
+            for team in draftteams.teams:
+                # Get position counts for team
+                pos_counts = draftteams.teams[team].get_pos_counts()
+                
+                # Increment the max of the actual drafted players or the expected max
+                max_expected_drafted = (max_expected_drafted + 
+                    max(pos_counts[pos],self.cfg['draft_max'][pos]))
             
-
+            # Saturate baseline at the max number of players at that position
+            n_pos_available[pos] = min(n_pos_available[pos], max_expected_drafted)
+            
             # Get baseline depth of each position
             pos_baseline[pos] = n_pos_available[pos] - n_pos_drafted[pos]
 

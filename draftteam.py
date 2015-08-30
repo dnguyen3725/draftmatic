@@ -283,3 +283,105 @@ class DraftTeam:
                 pos_weights[pos] = 1.0
 
         return pos_weights
+        
+    # Get expected low range starter points
+    def get_exp_points_starter_low(self, player_db, pos):
+    
+        # Get list of players at position
+        players = self.get_players(pos)
+        
+        # Get dict of expected points
+        fpts = {}
+        for player in players:
+            fpts[player] = player_db.get_fpts_low(player)
+            
+        # Sort by points
+        fpts_sorted = sorted(fpts, key=fpts.get)
+        
+        # Number of starters
+        n_starters = min(self.cfg['starters'][pos], len(fpts_sorted))
+        
+        # Sum number of points for starters
+        exp_points = 0.0
+        for i in range(0, n_starters):
+            exp_points = exp_points + fpts[fpts_sorted[i]]
+            
+        return exp_points
+            
+    # Get expected high range starter points
+    def get_exp_points_starter_high(self, player_db, pos):
+    
+        # Get list of players at position
+        players = self.get_players(pos)
+        
+        # Get dict of expected points
+        fpts = {}
+        for player in players:
+            fpts[player] = player_db.get_fpts_high(player)
+            
+        # Sort by points
+        fpts_sorted = sorted(fpts, key=fpts.get)
+        
+        # Number of starters
+        n_starters = min(self.cfg['starters'][pos], len(fpts_sorted))
+        
+        # Sum number of points for starters
+        exp_points = 0.0
+        for i in range(0, n_starters):
+            exp_points = exp_points + fpts[fpts_sorted[i]]
+            
+        return exp_points
+        
+    # Get expected low range bench points
+    def get_exp_points_bench_low(self, player_db, pos):
+    
+        # Get list of players at position
+        players = self.get_players(pos)
+        
+        # Get dict of expected points
+        fpts = {}
+        for player in players:
+            fpts[player] = player_db.get_fpts_low(player)
+            
+        # Sort by points in reverse
+        fpts_sorted = sorted(fpts, key=fpts.get, reverse=True)
+        
+        # Number of starters
+        n_starters = min(self.cfg['starters'][pos], len(fpts_sorted))
+        
+        # Number of bench players
+        n_bench = max(0, len(fpts_sorted)-n_starters)
+        
+        # Sum number of points for starters
+        exp_points = 0.0
+        for i in range(0, n_bench):
+            exp_points = exp_points + fpts[fpts_sorted[i]]
+            
+        return exp_points
+            
+    # Get expected high range bench points
+    def get_exp_points_bench_high(self, player_db, pos):
+    
+        # Get list of players at position
+        players = self.get_players(pos)
+        
+        # Get dict of expected points
+        fpts = {}
+        for player in players:
+            fpts[player] = player_db.get_fpts_high(player)
+            
+        # Sort by points
+        fpts_sorted = sorted(fpts, key=fpts.get, reverse=True)
+        
+        # Number of starters
+        n_starters = min(self.cfg['starters'][pos], len(fpts_sorted))
+        
+        # Number of bench players
+        n_bench = max(0, len(fpts_sorted)-n_starters)
+        
+        # Sum number of points for starters
+        exp_points = 0.0
+        for i in range(0, n_bench):
+            exp_points = exp_points + fpts[fpts_sorted[i]]
+            
+        return exp_points

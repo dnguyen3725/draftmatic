@@ -41,9 +41,9 @@ def set_config():
     cfg['teams'].append('Cesar')
     cfg['teams'].append('Josh')
     cfg['teams'].append('Zach')
-    cfg['teams'].append('4')
+    cfg['teams'].append('Leon')
     cfg['teams'].append('Don')
-    cfg['teams'].append('6')
+    cfg['teams'].append('Rosa')
     cfg['teams'].append('7')
     cfg['teams'].append('8')
     cfg['teams'].append('9')
@@ -197,7 +197,7 @@ def print_player_summary(player_db, n_pick, player):
     print_str = print_str + ' ('
     if player in player_db.adp:
         print_str = print_str + 'ADP{}, '.format(player_db.adp[player])
-    print_str = print_str + '{:.1f}-{:.1f} exp pts/game'.format(player_db.get_fpts_low(player),
+    print_str = print_str + '{:.1f}-{:.1f} pts/game'.format(player_db.get_fpts_low(player),
                                                         player_db.get_fpts_high(player))
     print_str = print_str + ')'
     print print_str
@@ -209,6 +209,10 @@ def print_team_summary(cfg, player_db, draftteams, drafter):
     pos_count_string = ''
     
     # Loop over the positions
+    sum_pts_start_low = 0.0;
+    sum_pts_start_high = 0.0;
+    sum_pts_bench_low = 0.0;
+    sum_pts_bench_high = 0.0;
     for pos in cfg['starters']:
     
         # Get player list at the position
@@ -216,13 +220,36 @@ def print_team_summary(cfg, player_db, draftteams, drafter):
         
         # Print out player list
         if len(player_list) > 0:
-            print pos+':'
+        
+            # Get expected points scored
+            pts_start_low = draftteams.teams[drafter].get_exp_points_starter_low(player_db, pos)
+            pts_start_high = draftteams.teams[drafter].get_exp_points_starter_high(player_db, pos)
+            pts_bench_low = draftteams.teams[drafter].get_exp_points_bench_low(player_db, pos)
+            pts_bench_high = draftteams.teams[drafter].get_exp_points_bench_high(player_db, pos)
+            
+            # Increment expected points over positions
+            sum_pts_start_low = sum_pts_start_low + pts_start_low
+            sum_pts_start_high = sum_pts_start_high + pts_start_high
+            sum_pts_bench_low = sum_pts_bench_low + pts_bench_low
+            sum_pts_bench_high = sum_pts_bench_high + pts_bench_high
+            
+            # Print position header with expected points
+            print '{} ({:.1f}-{:.1f} starter pts/game, {:.1f}-{:.1f} bench pts/game):'.format(
+                pos, pts_start_low, pts_start_high, pts_bench_low, pts_bench_high)
+                        
+            # Print players with expected points                                            
             for i in range(0, len(player_list)):
                 print '  '+player_list[i]+' ({:.1f}-{:.1f} exp pts/game)'.format(player_db.get_fpts_low(player_list[i]),
-                                                                              player_db.get_fpts_high(player_list[i]))
+                                                                                 player_db.get_fpts_high(player_list[i]))
         
-        pos_count_string = pos_count_string+pos+':{}'.format(len(player_list))+' '
-        
+        # Append player count string            
+        pos_count_string = pos_count_string+pos+':{}'.format(len(player_list))+' '    
+            
+    # Print total expected number of points for team
+    print '({:.1f}-{:.1f} starter pts/game, {:.1f}-{:.1f} bench pts/game)'.format(
+        sum_pts_start_low, sum_pts_start_high, sum_pts_bench_low, sum_pts_bench_high)
+           
+    # Print player count string
     print pos_count_string
 
 # Main Loop
@@ -281,7 +308,7 @@ def main():
         pos_weights = draftteams.teams[drafter].get_pos_weights(n_round)
 
         # Rank players
-        player_db.rank_players(drafted_players, n_round, pos_weights)
+        player_db.rank_players(draftteams, drafted_players, n_round, pos_weights)
 	
         # Only print 5 ranking by default
         n_print_players = min(5, len(player_db.rank))
