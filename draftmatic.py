@@ -29,9 +29,9 @@ def set_config():
     cfg['f_proj']['RB'] = 'FantasyPros_Fantasy_Football_Rankings_RB.xls'
     cfg['f_proj']['WR'] = 'FantasyPros_Fantasy_Football_Rankings_WR.xls'
     cfg['f_proj']['TE'] = 'FantasyPros_Fantasy_Football_Rankings_TE.xls'
-    cfg['f_proj']['K']  = 'FantasyPros_Fantasy_Football_Rankings_K.xls'
-    cfg['f_proj']['DST']  = 'FantasySharks_DST.xls'
-    cfg['f_proj']['IDP']  = 'FantasySharks_IDP.xls'
+    cfg['f_proj']['K'] = 'FantasyPros_Fantasy_Football_Rankings_K.xls'
+    cfg['f_proj']['DST'] = 'FantasySharks_DST.xls'
+    cfg['f_proj']['IDP'] = 'FantasySharks_IDP.xls'
     
     # Average draft position
     cfg['f_adp'] = 'FantasyPros_2015_Preseason_Overall_Rankings.xls'
@@ -46,7 +46,7 @@ def set_config():
     cfg['teams'].append('Rosa')
     cfg['teams'].append('7')
     cfg['teams'].append('8')
-    cfg['teams'].append('9')
+    cfg['teams'].append('Nick')
     cfg['teams'].append('10')
     cfg['teams'].append('11')
     cfg['teams'].append('Tony')
@@ -128,21 +128,21 @@ def set_config():
     # Number of rounds to establish baseline depth
     cfg['baseline_depth'] = []
     cfg['baseline_depth'].append(8) # 1
-    cfg['baseline_depth'].append(7) # 2
-    cfg['baseline_depth'].append(6) # 3
-    cfg['baseline_depth'].append(5) # 4
-    cfg['baseline_depth'].append(4) # 5
-    cfg['baseline_depth'].append(4) # 6
-    cfg['baseline_depth'].append(4) # 7
-    cfg['baseline_depth'].append(4) # 8
-    cfg['baseline_depth'].append(4) # 9
-    cfg['baseline_depth'].append(4) # 10
-    cfg['baseline_depth'].append(4) # 11
-    cfg['baseline_depth'].append(4) # 12
-    cfg['baseline_depth'].append(4) # 13
-    cfg['baseline_depth'].append(4) # 14
-    cfg['baseline_depth'].append(4) # 15
-    cfg['baseline_depth'].append(4) # 16
+    cfg['baseline_depth'].append(8) # 2
+    cfg['baseline_depth'].append(8) # 3
+    cfg['baseline_depth'].append(8) # 4
+    cfg['baseline_depth'].append(8) # 5
+    cfg['baseline_depth'].append(8) # 6
+    cfg['baseline_depth'].append(8) # 7
+    cfg['baseline_depth'].append(8) # 8
+    cfg['baseline_depth'].append(8) # 9
+    cfg['baseline_depth'].append(8) # 10
+    cfg['baseline_depth'].append(8) # 11
+    cfg['baseline_depth'].append(8) # 12
+    cfg['baseline_depth'].append(8) # 13
+    cfg['baseline_depth'].append(8) # 14
+    cfg['baseline_depth'].append(8) # 15
+    cfg['baseline_depth'].append(8) # 16
 
     # Positions allowed to draft in each round
     cfg['draftable'] = []
@@ -174,11 +174,11 @@ def set_config():
     cfg['draft_max']['DST'] = 1
 
     # Weight deduction per excess player
-    cfg['weight_decrement'] = 0.2
+    cfg['weight_decrement'] = 0.3
 
     # Distribution weights
     # A, low, high
-    cfg['distribution_weight'] = [0.2, 0.4, 0.4]
+    cfg['distribution_weight'] = [0.3, 0.4, 0.3]
     
     # Number of games in season
     cfg['num_games_per_season'] = 13
@@ -190,7 +190,8 @@ def set_config():
 def print_player_summary(player_db, n_pick, player):
     
     print_str = '{}'.format(n_pick+1)
-    print_str = print_str + ' ({:.1f}):'.format(player_db.get_vbd(player))
+    print_str = print_str + ' ({:.1f}/{:.1f}):'.format(
+        player_db.get_ranking_score(player), player_db.get_vbd(player))
     print_str = print_str + ' {}'.format(player)
     print_str = print_str + ' at {}'.format(player_db.position[player])
     print_str = print_str + ' from {}'.format(player_db.team[player])

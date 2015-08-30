@@ -479,6 +479,11 @@ class PlayerDatabase:
         
         return self.vbd[self.position[player]][player]
         
+    # Get rankings score
+    def get_ranking_score(self, player):
+    
+        return self.ranking_score[player]
+        
     # Get average expected points per game
     def get_fpts_avg(self, player):
     
