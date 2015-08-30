@@ -135,7 +135,7 @@ class DraftTeams:
             # Close file
             f.close
             
-    def load_state(self):
+    def load_state(self, player_db):
     
         # Loop through each team
         for team in self.teams:
@@ -148,17 +148,18 @@ class DraftTeams:
             fname = os.path.abspath(fname)
         
             # Open file for reading
-            f = open(fname, 'rb')
-            reader = csv.reader(f)
+            if os.path.isfile(fname):
+                f = open(fname, 'rb')
+                reader = csv.reader(f)
             
-            # Loop through draft picks in file
-            for row in reader:
+                # Loop through draft picks in file
+                for row in reader:
             
-                # Draft player
-                self.teams[team].draft_player(int(row[0]), row[1], row[2])
+                    # Draft player
+                    self.teams[team].draft_player(int(row[0]), row[1], row[2], player_db)
                 
-            # Close file
-            f.close
+                # Close file
+                f.close
 
 class DraftTeam:
 
@@ -171,10 +172,53 @@ class DraftTeam:
         self.drafted = [None]*self.cfg['num_rounds']
         
     # Draft player
-    def draft_player(self, n_round, player_name, player_pos):
+    def draft_player(self, n_round, player_name, player_pos, player_db):
     
         # Add player and position to draft list
-        self.drafted[n_round] = (player_name, player_pos)
+        self.drafted[n_round] = (player_name, player_pos)  
+            
+        # Add ADP to list
+        if not player_name in player_db.adp:
+            player_db.adp[player_name] = 999
+            
+        # Add to position list if not already there
+        if not player_name in player_db.position:
+            player_db.position[player_name] = player_pos
+        
+        # Add to team list if not already there
+        if not player_name in player_db.team:
+            player_db.team[player_name] = 'Unknown'
+        
+        # Add to players list if not already there
+        if not player_pos in player_db.players:
+            player_db.players[player_pos] = []
+        
+        if not player_name in player_db.players[player_pos]:
+            player_db.players[player_pos].append(player_name)
+            
+        # Add to points list if not already there
+        if not player_pos in player_db.proj_points:
+            player_db.proj_points[player_pos] = {}
+        
+        if not player_name in player_db.proj_points[player_pos]:
+            player_db.proj_points[player_pos][player_name] = 0.0
+            
+        if not player_pos in player_db.proj_points_low:
+            player_db.proj_points_low[player_pos] = {}
+        
+        if not player_name in player_db.proj_points_low[player_pos]:
+            player_db.proj_points_low[player_pos][player_name] = 0.0
+            
+        if not player_pos in player_db.proj_points_high:
+            player_db.proj_points_high[player_pos] = {}
+        
+        if not player_name in player_db.proj_points_high[player_pos]:
+            player_db.proj_points_high[player_pos][player_name] = 0.0
+            
+    # Undraft player
+    def undraft_player(self, n_round):
+    
+        self.drafted[n_round] = None
         
     # Get position counts
     def get_pos_counts(self):
@@ -239,3 +283,105 @@ class DraftTeam:
                 pos_weights[pos] = 1.0
 
         return pos_weights
+        
+    # Get expected low range starter points
+    def get_exp_points_starter_low(self, player_db, pos):
+    
+        # Get list of players at position
+        players = self.get_players(pos)
+        
+        # Get dict of expected points
+        fpts = {}
+        for player in players:
+            fpts[player] = player_db.get_fpts_low(player)
+            
+        # Sort by points
+        fpts_sorted = sorted(fpts, key=fpts.get)
+        
+        # Number of starters
+        n_starters = min(self.cfg['starters'][pos], len(fpts_sorted))
+        
+        # Sum number of points for starters
+        exp_points = 0.0
+        for i in range(0, n_starters):
+            exp_points = exp_points + fpts[fpts_sorted[i]]
+            
+        return exp_points
+            
+    # Get expected high range starter points
+    def get_exp_points_starter_high(self, player_db, pos):
+    
+        # Get list of players at position
+        players = self.get_players(pos)
+        
+        # Get dict of expected points
+        fpts = {}
+        for player in players:
+            fpts[player] = player_db.get_fpts_high(player)
+            
+        # Sort by points
+        fpts_sorted = sorted(fpts, key=fpts.get)
+        
+        # Number of starters
+        n_starters = min(self.cfg['starters'][pos], len(fpts_sorted))
+        
+        # Sum number of points for starters
+        exp_points = 0.0
+        for i in range(0, n_starters):
+            exp_points = exp_points + fpts[fpts_sorted[i]]
+            
+        return exp_points
+        
+    # Get expected low range bench points
+    def get_exp_points_bench_low(self, player_db, pos):
+    
+        # Get list of players at position
+        players = self.get_players(pos)
+        
+        # Get dict of expected points
+        fpts = {}
+        for player in players:
+            fpts[player] = player_db.get_fpts_low(player)
+            
+        # Sort by points in reverse
+        fpts_sorted = sorted(fpts, key=fpts.get, reverse=True)
+        
+        # Number of starters
+        n_starters = min(self.cfg['starters'][pos], len(fpts_sorted))
+        
+        # Number of bench players
+        n_bench = max(0, len(fpts_sorted)-n_starters)
+        
+        # Sum number of points for starters
+        exp_points = 0.0
+        for i in range(0, n_bench):
+            exp_points = exp_points + fpts[fpts_sorted[i]]
+            
+        return exp_points
+            
+    # Get expected high range bench points
+    def get_exp_points_bench_high(self, player_db, pos):
+    
+        # Get list of players at position
+        players = self.get_players(pos)
+        
+        # Get dict of expected points
+        fpts = {}
+        for player in players:
+            fpts[player] = player_db.get_fpts_high(player)
+            
+        # Sort by points
+        fpts_sorted = sorted(fpts, key=fpts.get, reverse=True)
+        
+        # Number of starters
+        n_starters = min(self.cfg['starters'][pos], len(fpts_sorted))
+        
+        # Number of bench players
+        n_bench = max(0, len(fpts_sorted)-n_starters)
+        
+        # Sum number of points for starters
+        exp_points = 0.0
+        for i in range(0, n_bench):
+            exp_points = exp_points + fpts[fpts_sorted[i]]
+            
+        return exp_points
