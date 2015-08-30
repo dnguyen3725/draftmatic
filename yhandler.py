@@ -1,25 +1,28 @@
 import requests
-from oauth_hook import OAuthHook
+from requests_oauthlib import OAuth1
 from requests import request
 from urlparse import parse_qs
 import webbrowser
 import csv
 import pdb
 
-GET_TOKEN_URL = 'https://api.login.yahoo.com/oauth2/get_token'
-AUTHORIZATION_URL = 'https://api.login.yahoo.com/oauth2/request_auth'
-REQUEST_TOKEN_URL = 'https://api.login.yahoo.com/oauth2/get_request_token'
+GET_TOKEN_URL = 'https://api.login.yahoo.com/oauth/v2/get_token'
+AUTHORIZATION_URL = 'https://api.login.yahoo.com/oauth/v2/request_auth'
+REQUEST_TOKEN_URL = 'https://api.login.yahoo.com/oauth/v2/get_request_token'
+QUERY_URL = 'http://fantasysports.yahooapis.com/fantasy/v2/'
 CALLBACK_URL = 'oob'
-RESPONSE_TYPE = 'code'
-GRANT_TYPE = 'authorization_code'
-LANGUAGE = 'en-us'
 
 class YHandler(object):
 
     def __init__(self, authf):
         self.authf = authf
         self.authd = self.get_authvals_csv(self.authf)
+        self.authd['callback_uri'] = CALLBACK_URL
 		
+	#  return a dict copy containing only the keys passed in via args
+    def subdict(self, *args):
+        return dict((k, self.authd[k]) for k in args if k in self.authd)
+        
     def get_authvals_csv(self, authf):
 		vals = {}	#dict of vals to be returned
 		with open(authf, 'rb') as f:
@@ -38,35 +41,68 @@ class YHandler(object):
         
     def reg_user(self):
         
-        # Send user to Yahoo login to approve app
-        auth_url = AUTHORIZATION_URL + '?'
-        auth_url = auth_url + 'client_id={}'.format(self.authd['client_id'])
-        auth_url = auth_url + '&redirect_uri={}'.format(CALLBACK_URL)
-        auth_url = auth_url + '&response_type={}'.format(RESPONSE_TYPE)
-        auth_url = auth_url + '&language={}'.format(LANGUAGE)        
-        webbrowser.open(auth_url)
+        # Set up Oauth session to generate request token
+        oauth = OAuth1(**self.subdict('client_key', 'client_secret', 'callback_uri'))
         
-        # Poll user for PIN
-        print "You will now be directed to a website for authorization.\n\
-Please authorize the app, and then copy and paste the provide PIN below."
-        self.authd['oauth_verifier'] = raw_input('Please enter your PIN:')
+        # Get request token
+        response = requests.post(url=REQUEST_TOKEN_URL, auth=oauth)
+        qs = parse_qs(response.text)
+        self.authd['resource_owner_key']= (qs['oauth_token'][0])
+        self.authd['resource_owner_secret'] = (qs['oauth_token_secret'][0])
         
-        #get final auth token
-        self.get_login_token()
+        # Send user to approve app
+        print ''
+        print 'You will now be directed to a website for authorization.'
+        print 'Please authorize the app, and then copy and paste the provide PIN below.'
+        print ''
+        webbrowser.open("%s?oauth_token=%s" % (AUTHORIZATION_URL, self.authd['resource_owner_key']))
+        self.authd['verifier'] = raw_input('Please enter your PIN:')
+
+        # Get authorization token
+        self.get_final_token()
         
-    def get_login_token(self):
+    def get_final_token(self, refresh=False):
         
-        pdb.set_trace()
+        # Set up an Oauth session to get authorization token
+        oa_kwargs = self.subdict('client_key', 'client_secret', 'resource_owner_key', 'resource_owner_secret')
+        if not refresh:
+            oa_kwargs['verifier'] = self.authd['verifier']
+        oauth = OAuth1(**oa_kwargs)
         
-        token_url = GET_TOKEN_URL + '?'
-        token_url = token_url + 'client_id={}'.format(self.authd['client_id'])
-        token_url = token_url + '&client_secret={}'.format(self.authd['client_secret'])
-        token_url = token_url + '&redirect_uri={}'.format(CALLBACK_URL)
-        token_url = token_url + '&code={}'.format(self.authd['oauth_verifier'])
-        token_url = token_url + '&grant_type={}'.format(GRANT_TYPE)
+        # Get authorization token
+        response = requests.post(url=GET_TOKEN_URL, auth=oauth)
+        cred = parse_qs(response.content)
         
-        response = requests.post(token_url)
-        qs = parse_qs(response.content)
-        self.authd.update(map(lambda d: (d[0], (d[1][0])), qs.items()))
-        self.write_authvals_csv(self.authd, self.authf)
+        # Save credentials from authorization token
+        self.save_credentials(cred)
+        
+        # Return authorization request response
         return response
+        
+    def save_credentials(self, cred):
+    
+        # Extract credentials from token
+        self.authd['resource_owner_key'] = cred['oauth_token'][0]
+        self.authd['resource_owner_secret'] = cred['oauth_token_secret'][0]
+        for k in ['xoauth_yahoo_guid','oauth_expires_in','oauth_session_handle','oauth_authorization_expires_in']:
+            self.authd[k] = cred[k][0]
+        
+        # Write credentials to authorization file    
+        self.write_authvals_csv(self.authd, self.authf)
+        
+    def call_api(self, url, req_meth='GET', data=None, headers=None):
+        oauth = OAuth1(**self.subdict('client_key', 'client_secret', 'resource_owner_key', 'resource_owner_secret'))
+        return requests.request(method=req_meth, url=url, auth=oauth, data=data, headers=headers)
+
+    def api_req(self, querystring, req_meth='GET', data=None, headers=None):
+        url = QUERY_URL+querystring
+        if ('resource_owner_key' not in self.authd) or ('resource_owner_secret' not in self.authd) or (not (self.authd['resource_owner_key'] and self.authd['resource_owner_secret'])):
+            self.reg_user()
+        query = self.call_api(url, req_meth, data=data, headers=headers)
+        
+        #  possible token expiration
+        if query.status_code != 200: 
+            self.get_final_token(refresh=True)
+            query = self.call_api(url, req_meth, data=data, headers=headers)
+        
+        return query

@@ -341,10 +341,29 @@ class PlayerDatabase:
 
                 if not player_name in self.players[player_position]:
                     self.players[player_position].append(player_name)
+                    
+                # Add to points list if not already there
+                if not player_position in self.proj_points:
+                    self.proj_points[player_position] = {}
+                
+                if not player_name in self.proj_points[player_position]:
+                    self.proj_points[player_position][player_name] = 0.0
+                
+                if not player_position in self.proj_points_low:
+                    self.proj_points_low[player_position] = {}
+                
+                if not player_name in self.proj_points_low[player_position]:
+                    self.proj_points_low[player_position][player_name] = 0.0
+                
+                if not player_position in self.proj_points_high:
+                    self.proj_points_high[player_position] = {}
+                
+                if not player_name in self.proj_points_high[player_position]:
+                    self.proj_points_high[player_position][player_name] = 0.0
 
     # Rank Players
     def rank_players(self, drafted_players, n_round, pos_weights):
-	
+        
         # Initialize available player lists to include all players
         self.avail_players = copy.deepcopy(self.players)
         self.avail_adp = copy.deepcopy(self.adp)
@@ -441,7 +460,7 @@ class PlayerDatabase:
                     # Only rank players with non-negative vbd
                     # Negative VBD is meaningless since it is below the baseline
                     if self.vbd[pos][player] >= 0.0:
-                        self.ranking_score[player] = self.vbd[pos][player]
+                        self.ranking_score[player] = self.vbd[pos][player]*pos_weights[pos]
 
 
         # Sort by ranking score to get rank

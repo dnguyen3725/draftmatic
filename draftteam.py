@@ -135,7 +135,7 @@ class DraftTeams:
             # Close file
             f.close
             
-    def load_state(self):
+    def load_state(self, player_db):
     
         # Loop through each team
         for team in self.teams:
@@ -148,17 +148,18 @@ class DraftTeams:
             fname = os.path.abspath(fname)
         
             # Open file for reading
-            f = open(fname, 'rb')
-            reader = csv.reader(f)
+            if os.path.isfile(fname):
+                f = open(fname, 'rb')
+                reader = csv.reader(f)
             
-            # Loop through draft picks in file
-            for row in reader:
+                # Loop through draft picks in file
+                for row in reader:
             
-                # Draft player
-                self.teams[team].draft_player(int(row[0]), row[1], row[2])
+                    # Draft player
+                    self.teams[team].draft_player(int(row[0]), row[1], row[2], player_db)
                 
-            # Close file
-            f.close
+                # Close file
+                f.close
 
 class DraftTeam:
 
@@ -171,10 +172,53 @@ class DraftTeam:
         self.drafted = [None]*self.cfg['num_rounds']
         
     # Draft player
-    def draft_player(self, n_round, player_name, player_pos):
+    def draft_player(self, n_round, player_name, player_pos, player_db):
     
         # Add player and position to draft list
-        self.drafted[n_round] = (player_name, player_pos)
+        self.drafted[n_round] = (player_name, player_pos)  
+            
+        # Add ADP to list
+        if not player_name in player_db.adp:
+            player_db.adp[player_name] = 999
+            
+        # Add to position list if not already there
+        if not player_name in player_db.position:
+            player_db.position[player_name] = player_pos
+        
+        # Add to team list if not already there
+        if not player_name in player_db.team:
+            player_db.team[player_name] = 'Unknown'
+        
+        # Add to players list if not already there
+        if not player_pos in player_db.players:
+            player_db.players[player_pos] = []
+        
+        if not player_name in player_db.players[player_pos]:
+            player_db.players[player_pos].append(player_name)
+            
+        # Add to points list if not already there
+        if not player_pos in player_db.proj_points:
+            player_db.proj_points[player_pos] = {}
+        
+        if not player_name in player_db.proj_points[player_pos]:
+            player_db.proj_points[player_pos][player_name] = 0.0
+            
+        if not player_pos in player_db.proj_points_low:
+            player_db.proj_points_low[player_pos] = {}
+        
+        if not player_name in player_db.proj_points_low[player_pos]:
+            player_db.proj_points_low[player_pos][player_name] = 0.0
+            
+        if not player_pos in player_db.proj_points_high:
+            player_db.proj_points_high[player_pos] = {}
+        
+        if not player_name in player_db.proj_points_high[player_pos]:
+            player_db.proj_points_high[player_pos][player_name] = 0.0
+            
+    # Undraft player
+    def undraft_player(self, n_round):
+    
+        self.drafted[n_round] = None
         
     # Get position counts
     def get_pos_counts(self):

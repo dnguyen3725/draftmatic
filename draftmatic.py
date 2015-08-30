@@ -38,18 +38,20 @@ def set_config():
     
     # Draft teams in order
     cfg['teams'] = []
-    cfg['teams'].append('1')
-    cfg['teams'].append('Don')
-    cfg['teams'].append('3')
+    cfg['teams'].append('Cesar')
+    cfg['teams'].append('Josh')
+    cfg['teams'].append('Zach')
     cfg['teams'].append('4')
-    cfg['teams'].append('5')
+    cfg['teams'].append('Don')
     cfg['teams'].append('6')
     cfg['teams'].append('7')
     cfg['teams'].append('8')
     cfg['teams'].append('9')
     cfg['teams'].append('10')
     cfg['teams'].append('11')
-    cfg['teams'].append('12')
+    cfg['teams'].append('Tony')
+    cfg['teams'].append('13')
+    cfg['teams'].append('Joe')
     
     # Number of draft rounds
     cfg['num_rounds'] = 16
@@ -166,17 +168,17 @@ def set_config():
     cfg['draft_max']['QB'] = 2
     cfg['draft_max']['RB'] = 5
     cfg['draft_max']['WR'] = 6
-    cfg['draft_max']['TE'] = 2
+    cfg['draft_max']['TE'] = 1
     cfg['draft_max']['K'] = 1
     cfg['draft_max']['IDP'] = 2
-    cfg['draft_max']['DST'] = 2
+    cfg['draft_max']['DST'] = 1
 
     # Weight deduction per excess player
     cfg['weight_decrement'] = 0.2
 
     # Distribution weights
     # A, low, high
-    cfg['distribution_weight'] = [0.4, 0.4, 0.2]
+    cfg['distribution_weight'] = [0.2, 0.4, 0.4]
     
     # Number of games in season
     cfg['num_games_per_season'] = 13
@@ -237,8 +239,14 @@ def main():
     for team in cfg['teams']:
         draftteams.add_team(team)
         
-    #yhandler = YHandler('auth.csv')
-    #yhandler.reg_user()
+    # Get yahoo registration info
+    if False:
+        yhandler = YHandler('auth.csv')
+        yhandler.reg_user()
+    
+        pdb.set_trace()
+    
+        temp = yhandler.api_req("select * from fantasysports.draftresults where league_key='238.l.627060'")
     
     # Startup console
     print
@@ -247,11 +255,14 @@ def main():
     print 'DraftMatic!!!'
     print '*'*50
     
+    # Create draft list history
+    draft_history = []
+    
     # Main Loop
     while True:
         
         # Read in draft state
-        draftteams.load_state()
+        draftteams.load_state(player_db)
         
         # Get round number
         n_round = draftteams.round()
@@ -273,19 +284,20 @@ def main():
         player_db.rank_players(drafted_players, n_round, pos_weights)
 	
         # Only print 5 ranking by default
-        n_print_players = 5
+        n_print_players = min(5, len(player_db.rank))
 
         # Console loop until valid draft command is received
         while True:
         
             # Print round number
-            print ''
-            print '-'*50
-            print 'Round {}-{} ({})'.format(n_round+1,n_pick+1,n_overall_pick+1)
-            print '{} is next to draft'.format(drafter)
-            print_team_summary(cfg, player_db, draftteams, drafter)
-            print '-'*50
-            print ''
+            if n_print_players > 0:
+                print ''
+                print '-'*50
+                print 'Round {}-{} ({})'.format(n_round+1,n_pick+1,n_overall_pick+1)
+                print '{} is next to draft'.format(drafter)
+                print_team_summary(cfg, player_db, draftteams, drafter)
+                print '-'*50
+                print ''
         
             # Print out rankings short list
             n_print_players = min(n_print_players, len(player_db.rank))
@@ -304,7 +316,10 @@ def main():
                 print 'exit    - exit program'
                 print 'reset   - restart draft'
                 print '#       - desired number of players to see'
-                print ''
+                print 'teams   - print summary of teams'
+                print 'undo    - undo draft pick'
+            
+                n_print_players = 0
             
             elif console_inp == 'exit':
                 
@@ -315,6 +330,12 @@ def main():
             
                 # Reset draft 
                 draftteams.reset()
+                
+                # Reset draft history
+                draft_history = []
+                
+                # Print 5 players
+                n_print_players = min(5, len(player_db.rank))
                 
                 break
                 
@@ -328,12 +349,59 @@ def main():
                 
                 print ''
                 
-            elif console_inp in player_db.adp:
+            elif console_inp == 'teams':
+            
+                print '-'*50
+                print ''
+                
+                for team in cfg['teams']:
+                    print team+':'
+                    print_team_summary(cfg, player_db, draftteams, team)
+                    print ''
+                
+                print '-'*50
+                
+                n_print_players = 0
+                
+            elif console_inp == 'undo':
+            
+                # Undo last draft pick
+                if len(draft_history) > 0:
+                    drafter = draft_history[-1][0]
+                    n_round = draft_history[-1][1]
+                    draftteams.teams[drafter].undraft_player(n_round)
+                    del draft_history[-1]
+                
+                    # Print 5 players
+                    n_print_players = min(5, len(player_db.rank))
+                else:
+                    print ''
+                    print 'No draft history available'
+                    
+                    n_print_players = 0
+                    
+                break
+                
+            elif console_inp in drafted_players:
+            
+                print console_inp+' previously drafted'
+                n_print_players = 0
+                
+            elif console_inp in player_db.position:
             
                 # Draft player and break loop
                 draftteams.teams[drafter].draft_player(n_round,
                                                        console_inp,
-                                                       player_db.position[console_inp])
+                                                       player_db.position[console_inp],
+                                                       player_db)
+                
+                # Add drafter to history
+                draft_history.append((drafter,n_round))
+                
+                # Print 5 players
+                n_print_players = min(5, len(player_db.rank))
+                
+                print console_inp+' ('+player_db.position[console_inp]+') successfully drafted'  
                 
                 break
                 
@@ -345,6 +413,29 @@ def main():
                 # Print error message
                 print ''
                 print console_inp+' not recognized'
+                console_verification = raw_input('Are you sure? [y/n]:')
+                if console_verification == 'y':
+                    console_pos = raw_input('Position:')
+                    if console_pos in cfg['starters']:
+                        # Draft player and break loop
+                        draftteams.teams[drafter].draft_player(n_round,
+                                                               console_inp,
+                                                               console_pos,
+                                                               player_db)
+                                                               
+                        # Add drafter to history
+                        draft_history.append((drafter,n_round))
+                        
+                        # Print 5 players
+                        n_print_players = min(5, len(player_db.rank))
+                        
+                        print console_inp+' ('+player_db.position[console_inp]+') successfully drafted'  
+                    else:
+                        print console_pos + ' not a recognized position'
+                        
+                        n_print_players = 0
+                
+                break
                                                
         # Write out draft state
         draftteams.write_state()
