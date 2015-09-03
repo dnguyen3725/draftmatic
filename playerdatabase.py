@@ -208,7 +208,7 @@ class PlayerDatabase:
                     # Header row found, save header names
                     hdr = []
                     for col_idx in range(0, num_cols): 
-                                        
+                        
                         hdr.append(xl_sheet.cell(row_idx, col_idx).value.encode('utf-8').strip())
                                         
                     found_header = True
@@ -362,7 +362,7 @@ class PlayerDatabase:
                     self.proj_points_high[player_position][player_name] = 0.0
 
     # Rank Players
-    def rank_players(self, draftteams, drafted_players, n_round, pos_weights):
+    def rank_players(self, draftteams, drafted_players, n_round, pos_weights, n_pick):
         
         # Initialize available player lists to include all players
         self.avail_players = copy.deepcopy(self.players)
@@ -402,6 +402,9 @@ class PlayerDatabase:
 
             # Increment available position counter
             n_pos_available[self.position[player]] += 1
+            
+        # Force IDP expected to number of teams since there are none the ADP
+        n_pos_available['IDP'] = len(self.cfg['teams'])
 
         # Calculate baseline depth for each position
         pos_baseline = {}
@@ -469,6 +472,10 @@ class PlayerDatabase:
                     # Negative VBD is meaningless since it is below the baseline
                     if self.vbd[pos][player] >= 0.0:
                         self.ranking_score[player] = self.vbd[pos][player]*pos_weights[pos]
+                        
+                        # Apply adp weight if available
+                        if player in self.adp:
+                            self.ranking_score[player] = self.ranking_score[player] + (n_pick - self.adp[player])*self.cfg['adp_bias']
 
 
         # Sort by ranking score to get rank
@@ -487,7 +494,7 @@ class PlayerDatabase:
     # Get average expected points per game
     def get_fpts_avg(self, player):
     
-        return self.proj_points_low[self.position[player]][player]/self.cfg['num_games_per_season']
+        return self.proj_points[self.position[player]][player]/self.cfg['num_games_per_season']
         
     # Get low expected points per game
     def get_fpts_low(self, player):

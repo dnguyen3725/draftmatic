@@ -39,18 +39,18 @@ def set_config():
     # Draft teams in order
     cfg['teams'] = []
     cfg['teams'].append('Cesar')
-    cfg['teams'].append('Josh')
+    cfg['teams'].append('JoshH')
     cfg['teams'].append('Zach')
     cfg['teams'].append('Leon')
     cfg['teams'].append('Don')
     cfg['teams'].append('Rosa')
-    cfg['teams'].append('7')
-    cfg['teams'].append('8')
+    cfg['teams'].append('Drew')
+    cfg['teams'].append('Mitchell')
     cfg['teams'].append('Nick')
-    cfg['teams'].append('10')
-    cfg['teams'].append('11')
+    cfg['teams'].append('JoshW')
+    cfg['teams'].append('Robert')
     cfg['teams'].append('Tony')
-    cfg['teams'].append('13')
+    cfg['teams'].append('Travis')
     cfg['teams'].append('Joe')
     
     # Number of draft rounds
@@ -146,22 +146,22 @@ def set_config():
 
     # Positions allowed to draft in each round
     cfg['draftable'] = []
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 1
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 2
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 3
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 4
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 5
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 6
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 7
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 8
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 9
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 10
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 11
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 12
-    cfg['draftable'].append(('QB','RB','WR','TE')) # 13
-    cfg['draftable'].append(('DST','K')) # 14
-    cfg['draftable'].append(('DST','K')) # 15
-    cfg['draftable'].append(('DST','K')) # 16
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 1
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 2
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 3
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 4
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 5
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 6
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 7
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 8
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 9
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 10
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 11
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 12
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 13
+    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 14
+    cfg['draftable'].append(('DST')) # 15
+    cfg['draftable'].append(('K')) # 16
 
     # Max number of players to draft at each position
     cfg['draft_max'] = {}
@@ -177,8 +177,11 @@ def set_config():
     cfg['weight_decrement'] = 0.3
 
     # Distribution weights
-    # A, low, high
-    cfg['distribution_weight'] = [0.3, 0.4, 0.3]
+    # average, low, high
+    cfg['distribution_weight'] = [0.5, 0.3, 0.2]
+    
+    # Points per ADP difference
+    cfg['adp_bias'] = 0.2
     
     # Number of games in season
     cfg['num_games_per_season'] = 13
@@ -198,8 +201,9 @@ def print_player_summary(player_db, n_pick, player):
     print_str = print_str + ' ('
     if player in player_db.adp:
         print_str = print_str + 'ADP{}, '.format(player_db.adp[player])
-    print_str = print_str + '{:.1f}-{:.1f} pts/game'.format(player_db.get_fpts_low(player),
-                                                        player_db.get_fpts_high(player))
+    print_str = print_str + '{:.1f}/{:.1f}/{:.1f} pts/game'.format(player_db.get_fpts_low(player),
+                                                                   player_db.get_fpts_avg(player),
+                                                                   player_db.get_fpts_high(player))
     print_str = print_str + ')'
     print print_str
 
@@ -210,10 +214,12 @@ def print_team_summary(cfg, player_db, draftteams, drafter):
     pos_count_string = ''
     
     # Loop over the positions
-    sum_pts_start_low = 0.0;
-    sum_pts_start_high = 0.0;
-    sum_pts_bench_low = 0.0;
-    sum_pts_bench_high = 0.0;
+    sum_pts_start_avg = 0.0
+    sum_pts_start_low = 0.0
+    sum_pts_start_high = 0.0
+    sum_pts_bench_avg = 0.0
+    sum_pts_bench_low = 0.0
+    sum_pts_bench_high = 0.0
     for pos in cfg['starters']:
     
         # Get player list at the position
@@ -223,32 +229,43 @@ def print_team_summary(cfg, player_db, draftteams, drafter):
         if len(player_list) > 0:
         
             # Get expected points scored
+            pts_start_avg = draftteams.teams[drafter].get_exp_points_starter_avg(player_db, pos)
             pts_start_low = draftteams.teams[drafter].get_exp_points_starter_low(player_db, pos)
             pts_start_high = draftteams.teams[drafter].get_exp_points_starter_high(player_db, pos)
+            pts_bench_avg = draftteams.teams[drafter].get_exp_points_bench_avg(player_db, pos)
             pts_bench_low = draftteams.teams[drafter].get_exp_points_bench_low(player_db, pos)
             pts_bench_high = draftteams.teams[drafter].get_exp_points_bench_high(player_db, pos)
             
             # Increment expected points over positions
+            sum_pts_start_avg = sum_pts_start_avg + pts_start_avg
             sum_pts_start_low = sum_pts_start_low + pts_start_low
             sum_pts_start_high = sum_pts_start_high + pts_start_high
+            sum_pts_bench_avg = sum_pts_bench_avg + pts_bench_avg
             sum_pts_bench_low = sum_pts_bench_low + pts_bench_low
             sum_pts_bench_high = sum_pts_bench_high + pts_bench_high
             
             # Print position header with expected points
-            print '{} ({:.1f}-{:.1f} starter pts/game, {:.1f}-{:.1f} bench pts/game):'.format(
-                pos, pts_start_low, pts_start_high, pts_bench_low, pts_bench_high)
+            print '{} ({:.1f}/{:.1f}/{:.1f} starter pts/game, {:.1f}/{:.1f}/{:.1f} bench pts/game):'.format(
+                pos, pts_start_low, pts_start_avg, pts_start_high, pts_bench_low, pts_bench_avg, pts_bench_high)
                         
             # Print players with expected points                                            
             for i in range(0, len(player_list)):
-                print '  '+player_list[i]+' ({:.1f}-{:.1f} exp pts/game)'.format(player_db.get_fpts_low(player_list[i]),
-                                                                                 player_db.get_fpts_high(player_list[i]))
+                print '  '+player_list[i]+' ({:.1f}/{:.1f}/{:.1f} exp pts/game)'.format(
+                    player_db.get_fpts_low(player_list[i]),
+                    player_db.get_fpts_avg(player_list[i]),
+                    player_db.get_fpts_high(player_list[i]))
         
         # Append player count string            
         pos_count_string = pos_count_string+pos+':{}'.format(len(player_list))+' '    
             
     # Print total expected number of points for team
-    print '({:.1f}-{:.1f} starter pts/game, {:.1f}-{:.1f} bench pts/game)'.format(
-        sum_pts_start_low, sum_pts_start_high, sum_pts_bench_low, sum_pts_bench_high)
+    print '({:.1f}/{:.1f}/{:.1f} starter pts/game, {:.1f}/{:.1f}/{:.1f} bench pts/game)'.format(
+        sum_pts_start_low,
+        sum_pts_start_avg,
+        sum_pts_start_high,
+        sum_pts_bench_low,
+        sum_pts_bench_avg,
+        sum_pts_bench_high)
            
     # Print player count string
     print pos_count_string
@@ -295,6 +312,19 @@ def main():
         # Get round number
         n_round = draftteams.round()
         
+        if n_round >= len(cfg['baseline_depth']):
+            print '-'*50
+            print ''
+            
+            for team in cfg['teams']:
+                print team+':'
+                print_team_summary(cfg, player_db, draftteams, team)
+                print ''
+            
+            print '-'*50
+            
+            exit()
+        
         # Get pick number
         n_pick = draftteams.get_pick_num()
         n_overall_pick = draftteams.get_overall_pick_num()
@@ -309,16 +339,17 @@ def main():
         pos_weights = draftteams.teams[drafter].get_pos_weights(n_round)
 
         # Rank players
-        player_db.rank_players(draftteams, drafted_players, n_round, pos_weights)
+        player_db.rank_players(draftteams, drafted_players, n_round, pos_weights, n_overall_pick+1)
 	
         # Only print 5 ranking by default
         n_print_players = min(5, len(player_db.rank))
+        print_round_summary = True
 
         # Console loop until valid draft command is received
         while True:
         
             # Print round number
-            if n_print_players > 0:
+            if print_round_summary:
                 print ''
                 print '-'*50
                 print 'Round {}-{} ({})'.format(n_round+1,n_pick+1,n_overall_pick+1)
@@ -326,6 +357,7 @@ def main():
                 print_team_summary(cfg, player_db, draftteams, drafter)
                 print '-'*50
                 print ''
+                print_round_summary = False
         
             # Print out rankings short list
             n_print_players = min(n_print_players, len(player_db.rank))
@@ -364,6 +396,7 @@ def main():
                 
                 # Print 5 players
                 n_print_players = min(5, len(player_db.rank))
+                print_round_summary = True
                 
                 break
                 
@@ -371,6 +404,7 @@ def main():
                 
                 # Set number of rankings list to print
                 n_print_players = int(console_inp)
+                print_round_summary = True
                 
                 # Saturate at max ranking
                 n_print_players = min(n_print_players, len(player_db.rank))
@@ -402,6 +436,7 @@ def main():
                 
                     # Print 5 players
                     n_print_players = min(5, len(player_db.rank))
+                    print_round_summary = True
                 else:
                     print ''
                     print 'No draft history available'
@@ -428,6 +463,7 @@ def main():
                 
                 # Print 5 players
                 n_print_players = min(5, len(player_db.rank))
+                print_round_summary = True
                 
                 print console_inp+' ('+player_db.position[console_inp]+') successfully drafted'  
                 
@@ -456,6 +492,7 @@ def main():
                         
                         # Print 5 players
                         n_print_players = min(5, len(player_db.rank))
+                        print_round_summary = True
                         
                         print console_inp+' ('+player_db.position[console_inp]+') successfully drafted'  
                     else:
