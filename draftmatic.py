@@ -312,6 +312,19 @@ def main():
         # Get round number
         n_round = draftteams.round()
         
+        if n_round >= len(cfg['baseline_depth']):
+            print '-'*50
+            print ''
+            
+            for team in cfg['teams']:
+                print team+':'
+                print_team_summary(cfg, player_db, draftteams, team)
+                print ''
+            
+            print '-'*50
+            
+            exit()
+        
         # Get pick number
         n_pick = draftteams.get_pick_num()
         n_overall_pick = draftteams.get_overall_pick_num()
@@ -330,12 +343,13 @@ def main():
 	
         # Only print 5 ranking by default
         n_print_players = min(5, len(player_db.rank))
+        print_round_summary = True
 
         # Console loop until valid draft command is received
         while True:
         
             # Print round number
-            if n_print_players > 0:
+            if print_round_summary:
                 print ''
                 print '-'*50
                 print 'Round {}-{} ({})'.format(n_round+1,n_pick+1,n_overall_pick+1)
@@ -343,6 +357,7 @@ def main():
                 print_team_summary(cfg, player_db, draftteams, drafter)
                 print '-'*50
                 print ''
+                print_round_summary = False
         
             # Print out rankings short list
             n_print_players = min(n_print_players, len(player_db.rank))
@@ -381,6 +396,7 @@ def main():
                 
                 # Print 5 players
                 n_print_players = min(5, len(player_db.rank))
+                print_round_summary = True
                 
                 break
                 
@@ -388,6 +404,7 @@ def main():
                 
                 # Set number of rankings list to print
                 n_print_players = int(console_inp)
+                print_round_summary = True
                 
                 # Saturate at max ranking
                 n_print_players = min(n_print_players, len(player_db.rank))
@@ -419,6 +436,7 @@ def main():
                 
                     # Print 5 players
                     n_print_players = min(5, len(player_db.rank))
+                    print_round_summary = True
                 else:
                     print ''
                     print 'No draft history available'
@@ -445,6 +463,7 @@ def main():
                 
                 # Print 5 players
                 n_print_players = min(5, len(player_db.rank))
+                print_round_summary = True
                 
                 print console_inp+' ('+player_db.position[console_inp]+') successfully drafted'  
                 
@@ -473,6 +492,7 @@ def main():
                         
                         # Print 5 players
                         n_print_players = min(5, len(player_db.rank))
+                        print_round_summary = True
                         
                         print console_inp+' ('+player_db.position[console_inp]+') successfully drafted'  
                     else:
