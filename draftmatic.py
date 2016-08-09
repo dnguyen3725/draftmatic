@@ -9,7 +9,7 @@ import sys
 import os
 from playerdatabase import PlayerDatabase
 from draftteam import DraftTeams
-from yhandler import YHandler
+#from yhandler import YHandler
 import pdb
 
 # Set configuration parameters
@@ -18,10 +18,10 @@ def set_config():
     cfg = {}
 
     # Directory of player projection data
-    cfg['root_dir'] = '2015_data'
+    cfg['root_dir'] = '2016_data'
     
     # Directory of draft team data
-    cfg['team_dir'] = '2015_teams'
+    cfg['team_dir'] = '2016_teams_tpa'
     
     # Player projection files
     cfg['f_proj'] = {}
@@ -34,7 +34,7 @@ def set_config():
     cfg['f_proj']['IDP'] = 'FantasySharks_IDP.xls'
     
     # Average draft position
-    cfg['f_adp'] = 'FantasyPros_2015_Preseason_Overall_Rankings.xls'
+    cfg['f_adp'] = 'FantasyPros_2016_Overall_ADP_Rankings.xls'
     
     # Draft teams in order
     cfg['teams'] = []
@@ -55,6 +55,7 @@ def set_config():
     
     # Number of draft rounds
     cfg['num_rounds'] = 16
+    #cfg['num_rounds'] = 15
 
     # Number of starters
     cfg['starters'] = {}
@@ -65,6 +66,15 @@ def set_config():
     cfg['starters']['K'] = 1
     cfg['starters']['IDP'] = 1
     cfg['starters']['DST'] = 1
+    '''
+    cfg['starters']['QB'] = 1
+    cfg['starters']['RB'] = 3
+    cfg['starters']['WR'] = 3
+    cfg['starters']['TE'] = 1
+    cfg['starters']['K'] = 1
+    cfg['starters']['IDP'] = 0
+    cfg['starters']['DST'] = 1
+    '''
     
     # Offensive player scoring (pts/unit)
     cfg['off_pts'] = {}
@@ -146,23 +156,39 @@ def set_config():
 
     # Positions allowed to draft in each round
     cfg['draftable'] = []
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 1
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 2
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 3
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 4
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 5
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 6
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 7
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 8
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 9
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 10
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 11
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 12
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 13
-    cfg['draftable'].append(('QB','RB','WR','TE','IDP')) # 14
-    cfg['draftable'].append(('DST')) # 15
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 1
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 2
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 3
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 4
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 5
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 6
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 7
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 8
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 9
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 10
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 11
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 12
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 13
+    cfg['draftable'].append(('IDP','DST')) # 14
+    cfg['draftable'].append(('DST','IDP')) # 15
     cfg['draftable'].append(('K')) # 16
-
+    '''
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 1
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 2
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 3
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 4
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 5
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 6
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 7
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 8
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 9
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 10
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 11
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 12
+    cfg['draftable'].append(('QB','RB','WR','TE')) # 13
+    cfg['draftable'].append(('DST')) # 14
+    cfg['draftable'].append(('K')) # 15
+    '''
     # Max number of players to draft at each position
     cfg['draft_max'] = {}
     cfg['draft_max']['QB'] = 2
@@ -170,8 +196,18 @@ def set_config():
     cfg['draft_max']['WR'] = 6
     cfg['draft_max']['TE'] = 1
     cfg['draft_max']['K'] = 1
-    cfg['draft_max']['IDP'] = 2
+    cfg['draft_max']['IDP'] = 1
     cfg['draft_max']['DST'] = 1
+    '''
+    cfg['draft_max'] = {}
+    cfg['draft_max']['QB'] = 2
+    cfg['draft_max']['RB'] = 6
+    cfg['draft_max']['WR'] = 6
+    cfg['draft_max']['TE'] = 2
+    cfg['draft_max']['K'] = 1
+    cfg['draft_max']['IDP'] = 0
+    cfg['draft_max']['DST'] = 1
+    '''
 
     # Weight deduction per excess player
     cfg['weight_decrement'] = 0.3
@@ -312,7 +348,7 @@ def main():
         # Get round number
         n_round = draftteams.round()
         
-        if n_round >= len(cfg['baseline_depth']):
+        if n_round >= cfg['num_rounds']:
             print '-'*50
             print ''
             
