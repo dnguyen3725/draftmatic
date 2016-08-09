@@ -314,6 +314,12 @@ class PlayerDatabase:
 
                 # Position
                 player_position = xl_sheet.cell(row_idx, 2).value.encode('utf-8')
+                if player_position[0] == 'K':
+                    player_position = 'K'
+                elif player_position[0:3] == 'DST':
+                    player_position = 'DST'
+                else:
+                    player_position = player_position[0:2]
 				
                 # Team
                 player_team = xl_sheet.cell(row_idx, 2).value.encode('utf-8')
@@ -399,6 +405,9 @@ class PlayerDatabase:
         for i in range(0, n_baseline_player):
         
             player = players_adp_sorted[i]
+
+            if self.position[player] == 'WR85':
+                pdb.set_trace()
 
             # Increment available position counter
             n_pos_available[self.position[player]] += 1
