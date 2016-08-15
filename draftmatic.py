@@ -7,10 +7,12 @@
 
 import sys
 import os
+import pandas as pd
 from playerdatabase import PlayerDatabase
 from draftteam import DraftTeams
-#from yhandler import YHandler
 import pdb
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Set configuration parameters
 def set_config():
@@ -36,6 +38,9 @@ def set_config():
     # Average draft position
     cfg['f_adp'] = 'FantasyPros_2016_Overall_ADP_Rankings.xls'
     
+    # Primary team
+    cfg['primary_team'] = 'Don'
+    
     # Draft teams in order
     cfg['teams'] = []
     cfg['teams'].append('Cesar')
@@ -54,11 +59,12 @@ def set_config():
     cfg['teams'].append('Joe')
     
     # Number of draft rounds
-    cfg['num_rounds'] = 16
-    #cfg['num_rounds'] = 15
+    #cfg['num_rounds'] = 16
+    cfg['num_rounds'] = 15
 
     # Number of starters
     cfg['starters'] = {}
+    '''
     cfg['starters']['QB'] = 1
     cfg['starters']['RB'] = 2
     cfg['starters']['WR'] = 3
@@ -68,13 +74,13 @@ def set_config():
     cfg['starters']['DST'] = 1
     '''
     cfg['starters']['QB'] = 1
-    cfg['starters']['RB'] = 3
+    cfg['starters']['RB'] = 2
     cfg['starters']['WR'] = 3
     cfg['starters']['TE'] = 1
     cfg['starters']['K'] = 1
     cfg['starters']['IDP'] = 0
     cfg['starters']['DST'] = 1
-    '''
+    
     
     # Offensive player scoring (pts/unit)
     cfg['off_pts'] = {}
@@ -156,6 +162,7 @@ def set_config():
 
     # Positions allowed to draft in each round
     cfg['draftable'] = []
+    '''
     cfg['draftable'].append(('QB','RB','WR','TE')) # 1
     cfg['draftable'].append(('QB','RB','WR','TE')) # 2
     cfg['draftable'].append(('QB','RB','WR','TE')) # 3
@@ -188,8 +195,9 @@ def set_config():
     cfg['draftable'].append(('QB','RB','WR','TE')) # 13
     cfg['draftable'].append(('DST')) # 14
     cfg['draftable'].append(('K')) # 15
-    '''
+    
     # Max number of players to draft at each position
+    '''
     cfg['draft_max'] = {}
     cfg['draft_max']['QB'] = 2
     cfg['draft_max']['RB'] = 5
@@ -207,17 +215,17 @@ def set_config():
     cfg['draft_max']['K'] = 1
     cfg['draft_max']['IDP'] = 0
     cfg['draft_max']['DST'] = 1
-    '''
+    
 
     # Weight deduction per excess player
     cfg['weight_decrement'] = 0.3
 
     # Distribution weights
     # average, low, high
-    cfg['distribution_weight'] = [0.5, 0.3, 0.2]
+    cfg['distribution_weight'] = [0.4, 0.5, 0.2]
     
     # Points per ADP difference
-    cfg['adp_bias'] = 0.2
+    cfg['adp_bias'] = 0.0
     
     # Number of games in season
     cfg['num_games_per_season'] = 13
@@ -320,15 +328,6 @@ def main():
     for team in cfg['teams']:
         draftteams.add_team(team)
         
-    # Get yahoo registration info
-    if False:
-        yhandler = YHandler('auth.csv')
-        yhandler.reg_user()
-    
-        pdb.set_trace()
-    
-        temp = yhandler.api_req("select * from fantasysports.draftresults where league_key='238.l.627060'")
-    
     # Startup console
     print
     print ''
@@ -396,14 +395,65 @@ def main():
                 print_round_summary = False
         
             # Print out rankings short list
+            players_to_plot_vbd = pd.DataFrame(columns=cfg['starters'].keys())
+            players_to_plot_rank = pd.DataFrame(columns=cfg['starters'].keys())
             n_print_players = min(n_print_players, len(player_db.rank))
             for i in range(0, n_print_players):
                 print_player_summary(player_db, n_overall_pick+i, player_db.rank[i])
+                players_to_plot_vbd.set_value(n_overall_pick+i+1,
+                                              player_db.position[player_db.rank[i]],
+                                              player_db.get_vbd(player_db.rank[i]))
+                players_to_plot_rank.set_value(n_overall_pick+i+1,
+                                               player_db.position[player_db.rank[i]],
+                                               player_db.get_ranking_score(player_db.rank[i]))
+            
+            # Update player 
+            if n_print_players > 0:
+                
+                plt.figure(1)
+                plt.close()
+                plt.subplot(211)
+                legend_strings = []
+                # Loop over each position
+                for position in players_to_plot_vbd:
+                    # Get players in this position
+                    players_to_plot_for_pos = players_to_plot_vbd[position].dropna()
+                    if players_to_plot_for_pos.size > 0:
+                        # Plot position ranks and add position to legend
+                        plt.plot(players_to_plot_for_pos,'-o')
+                        legend_strings.append(position)
+                for i in range(0, n_print_players):
+                    plt.text(n_overall_pick+i+1,
+                             player_db.get_vbd(player_db.rank[i]),
+                             player_db.rank[i])
+                # Append text for each player
+                plt.xlabel('Rank')
+                plt.ylabel('VBD Score')
+                plt.legend(legend_strings)
+                plt.subplot(212)
+                legend_strings = []
+                # Loop over each position
+                for position in players_to_plot_rank:
+                    # Get players in this position
+                    players_to_plot_for_pos = players_to_plot_rank[position].dropna()
+                    if players_to_plot_for_pos.size > 0:
+                        # Plot position ranks and add position to legend
+                        plt.plot(players_to_plot_for_pos,'-o')
+                        legend_strings.append(position)
+                for i in range(0, n_print_players):
+                    plt.text(n_overall_pick+i+1,
+                             player_db.get_ranking_score(player_db.rank[i]),
+                             player_db.rank[i])
+                # Append text for each player
+                plt.xlabel('Rank')
+                plt.ylabel('Ranking Score')
+                plt.legend(legend_strings)
+                plt.show(block=False)
             
             # Prompt user for pick
             print ''
             console_inp = raw_input('Enter Pick (''h'' for help): ')
-		
+	        		    
             # Process command
             if console_inp == 'h':
             
@@ -412,6 +462,7 @@ def main():
                 print 'exit    - exit program'
                 print 'reset   - restart draft'
                 print '#       - desired number of players to see'
+                print '*#      - print list of players  for primary player''s next pick'
                 print 'teams   - print summary of teams'
                 print 'undo    - undo draft pick'
             
