@@ -412,7 +412,7 @@ class PlayerDatabase:
             # Increment available position counter
             n_pos_available[self.position[player]] += 1
             
-        # Force IDP expected to number of teams since there are none the ADP
+        # Force IDP expected to number of teams since there are none in the ADP
         n_pos_available['IDP'] = len(self.cfg['teams'])
 
         # Calculate baseline depth for each position
