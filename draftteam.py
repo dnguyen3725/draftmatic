@@ -63,6 +63,22 @@ class DraftTeams:
 
         # Return the lowest draft round
         return next_draft_round
+        
+    # Determine draft round number for player
+    def next_round_for_team(self, team):
+    
+        # initialize next draft round to max
+        next_draft_round = self.cfg['num_rounds']
+        
+        # Loop through draft list rounds
+        for i in range(0, self.cfg['num_rounds']):
+            
+            # Save lowest draft slot
+            if self.teams[team].drafted[i] == None:
+                next_draft_round = min(i, next_draft_round)
+                
+        # Return the lowest draft round
+        return next_draft_round
 
     # Get pick number
     def get_pick_num(self):
@@ -86,11 +102,37 @@ class DraftTeams:
                 drafter = self.cfg['teams'][-(i+1)]
                 if self.teams[drafter].drafted[n_round] == None:
                     return i
+                    
+    # Get pick number for plyaer
+    def get_pick_num_for_team(self, team):
+    
+        # Determine round number
+        n_round = self.next_round_for_team(team)
+
+        # Determine if it is an ascending round or a descending round
+        # Event rounds are ascending
+        is_ascending_round = (n_round % 2) == 0
+
+        if is_ascending_round:
+            # Loop drafters to find someone that needs to draft this round
+            for i in range(0, len(self.cfg['teams'])):
+                if self.cfg['teams'][i] == team:
+                    return i
+        else:
+            # Loop backwards through drafters to find someone that needs to draft this round
+            for i in range(0, len(self.cfg['teams'])):
+                if self.cfg['teams'][-(i+1)] == team:
+                    return i
           
     # Get overall pick number
     def get_overall_pick_num(self):
 
         return self.round()*len(self.cfg['teams']) + self.get_pick_num()
+        
+    # Get overall pick number for team
+    def get_overall_pick_num_for_team(self, team):
+        
+        return self.next_round_for_team(team)*len(self.cfg['teams']) + self.get_pick_num_for_team(team)
     
     # Get next drafter
     def get_drafter(self):
