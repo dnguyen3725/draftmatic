@@ -13,6 +13,7 @@ from draftteam import DraftTeams
 import pdb
 import matplotlib.pyplot as plt
 import seaborn as sns
+import copy
 
 # Set configuration parameters
 def set_config():
@@ -338,14 +339,18 @@ def main():
     # Create draft list history
     draft_history = []
     
+    # Initialize to print players for next team
+    print_next_team = True
+    
     # Main Loop
     while True:
         
         # Read in draft state
         draftteams.load_state(player_db)
         
-        # Get round number
+        # Get round number for next team and for primary team
         n_round = draftteams.round()
+        n_round_primary = draftteams.next_round_for_team(cfg['primary_team'])
         
         if n_round >= cfg['num_rounds']:
             print '-'*50
@@ -362,7 +367,9 @@ def main():
         
         # Get pick number
         n_pick = draftteams.get_pick_num()
+        n_pick_primary = draftteams.get_pick_num_for_team(cfg['primary_team'])
         n_overall_pick = draftteams.get_overall_pick_num()
+        n_overall_pick_primary = draftteams.get_overall_pick_num_for_team(cfg['primary_team'])
 
         # Get drafter
         drafter = draftteams.get_drafter()
@@ -372,10 +379,13 @@ def main():
 
         # Get position weights for the next drafter
         pos_weights = draftteams.teams[drafter].get_pos_weights(n_round)
+        pos_weights_primary = draftteams.teams[cfg['primary_team']].get_pos_weights(n_round_primary)
 
         # Rank players
         player_db.rank_players(draftteams, drafted_players, n_round, pos_weights, n_overall_pick+1)
-	
+        player_db_primary = copy.deepcopy(player_db)
+        player_db_primary.rank_players(draftteams, drafted_players, n_round_primary, pos_weights_primary, n_overall_pick_primary+1)
+	    
         # Only print 5 ranking by default
         n_print_players = min(5, len(player_db.rank))
         print_round_summary = True
@@ -393,19 +403,30 @@ def main():
                 print '-'*50
                 print ''
                 print_round_summary = False
+                
+            # Set printed player database
+            if print_next_team == True:
+            
+                print 'Picks for next drafter ({}), {}-{} ({}):'.format(drafter,n_round+1,n_pick+1,n_overall_pick+1)
+                player_db_print = player_db
+                
+            else:
+                
+                print 'Picks for primary drafter ({}), {}-{} ({}):'.format(cfg['primary_team'],n_round_primary+1,n_pick_primary+1,n_overall_pick_primary+1)
+                player_db_print = player_db_primary
         
             # Print out rankings short list
             players_to_plot_vbd = pd.DataFrame(columns=cfg['starters'].keys())
             players_to_plot_rank = pd.DataFrame(columns=cfg['starters'].keys())
-            n_print_players = min(n_print_players, len(player_db.rank))
+            n_print_players = min(n_print_players, len(player_db_print.rank))
             for i in range(0, n_print_players):
-                print_player_summary(player_db, n_overall_pick+i, player_db.rank[i])
+                print_player_summary(player_db_print, n_overall_pick+i, player_db_print.rank[i])
                 players_to_plot_vbd.set_value(n_overall_pick+i+1,
-                                              player_db.position[player_db.rank[i]],
-                                              player_db.get_vbd(player_db.rank[i]))
+                                              player_db_print.position[player_db_print.rank[i]],
+                                              player_db_print.get_vbd(player_db_print.rank[i]))
                 players_to_plot_rank.set_value(n_overall_pick+i+1,
-                                               player_db.position[player_db.rank[i]],
-                                               player_db.get_ranking_score(player_db.rank[i]))
+                                               player_db_print.position[player_db_print.rank[i]],
+                                               player_db_print.get_ranking_score(player_db_print.rank[i]))
             
             # Update player 
             if n_print_players > 0:
@@ -424,8 +445,8 @@ def main():
                         legend_strings.append(position)
                 for i in range(0, n_print_players):
                     plt.text(n_overall_pick+i+1,
-                             player_db.get_vbd(player_db.rank[i]),
-                             player_db.rank[i])
+                             player_db_print.get_vbd(player_db_print.rank[i]),
+                             player_db_print.rank[i])
                 # Append text for each player
                 plt.xlabel('Rank')
                 plt.ylabel('VBD Score')
@@ -442,8 +463,8 @@ def main():
                         legend_strings.append(position)
                 for i in range(0, n_print_players):
                     plt.text(n_overall_pick+i+1,
-                             player_db.get_ranking_score(player_db.rank[i]),
-                             player_db.rank[i])
+                             player_db_print.get_ranking_score(player_db_print.rank[i]),
+                             player_db_print.rank[i])
                 # Append text for each player
                 plt.xlabel('Rank')
                 plt.ylabel('Ranking Score')
@@ -459,16 +480,16 @@ def main():
             
                 print ''
                 print 'Type desired player to draft or one of the following commands'
-                print 'exit    - exit program'
-                print 'reset   - restart draft'
-                print '#       - desired number of players to see'
-                print '*#      - print list of players  for primary player''s next pick'
-                print 'teams   - print summary of teams'
-                print 'undo    - undo draft pick'
+                print 'exit/quit - exit program'
+                print 'reset     - restart draft'
+                print '*         - toggle showing players for next drafting team or primary team'
+                print '#         - desired number of players to see'
+                print 'teams     - print summary of teams'
+                print 'undo      - undo draft pick'
             
                 n_print_players = 0
             
-            elif console_inp == 'exit':
+            elif (console_inp == 'exit') or (console_inp == 'quit'):
                 
                 # Exit on command
                 sys.exit()
@@ -482,7 +503,18 @@ def main():
                 draft_history = []
                 
                 # Print 5 players
-                n_print_players = min(5, len(player_db.rank))
+                n_print_players = min(5, len(player_db_print.rank))
+                print_round_summary = True
+                
+                break
+                
+            elif console_inp == '*':
+            
+                # Toggle print mode
+                print_next_team = not print_next_team
+                
+                # Print 5 players
+                n_print_players = min(5, len(player_db_print.rank))
                 print_round_summary = True
                 
                 break
@@ -494,7 +526,7 @@ def main():
                 print_round_summary = True
                 
                 # Saturate at max ranking
-                n_print_players = min(n_print_players, len(player_db.rank))
+                n_print_players = min(n_print_players, len(player_db_print.rank))
                 
                 print ''
                 
@@ -522,7 +554,7 @@ def main():
                     del draft_history[-1]
                 
                     # Print 5 players
-                    n_print_players = min(5, len(player_db.rank))
+                    n_print_players = min(5, len(player_db_print.rank))
                     print_round_summary = True
                 else:
                     print ''
@@ -578,7 +610,7 @@ def main():
                         draft_history.append((drafter,n_round))
                         
                         # Print 5 players
-                        n_print_players = min(5, len(player_db.rank))
+                        n_print_players = min(5, len(player_db_print.rank))
                         print_round_summary = True
                         
                         print console_inp+' ('+player_db.position[console_inp]+') successfully drafted'  
