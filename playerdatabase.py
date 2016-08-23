@@ -406,9 +406,6 @@ class PlayerDatabase:
         
             player = players_adp_sorted[i]
 
-            if self.position[player] == 'WR85':
-                pdb.set_trace()
-
             # Increment available position counter
             n_pos_available[self.position[player]] += 1
             
@@ -448,24 +445,26 @@ class PlayerDatabase:
 
             # Calculate VBD if projected points are available
             if pos in self.avail_proj_points:
-
+            
+                # Compute weighted expected points
+                players_fpts_weighted = {}
+                for player in self.avail_proj_points[pos]:
+                    players_fpts_weighted[player] = (self.cfg['distribution_weight'][0]*self.avail_proj_points[pos][player] +
+                                                     self.cfg['distribution_weight'][1]*self.avail_proj_points_low[pos][player] +
+                                                     self.cfg['distribution_weight'][2]*self.avail_proj_points_high[pos][player])
+                
                 # Sort players in position group from highest to lowest by avg fpts
-                players_fpts_sorted = sorted(self.avail_proj_points[pos], key=self.avail_proj_points[pos].get, reverse=True)
-
+                players_fpts_sorted = sorted(players_fpts_weighted, key=players_fpts_weighted.get, reverse=True)
+                                
                 # Get basline score
-                vbd_baseline[pos] = self.proj_points[pos][players_fpts_sorted[pos_baseline[pos]]]
+                vbd_baseline[pos] = players_fpts_weighted[players_fpts_sorted[pos_baseline[pos]]]
 
                 # Calculate vbd for all available players in position
                 for player in self.avail_proj_points[pos]:
                     
                     if player in self.avail_players[pos]:
                     
-                        vbd_avg = self.avail_proj_points[pos][player] - vbd_baseline[pos]
-                        vbd_low = self.avail_proj_points_low[pos][player] - vbd_baseline[pos]
-                        vbd_high = self.avail_proj_points_high[pos][player] - vbd_baseline[pos]
-                        self.vbd[pos][player] = (self.cfg['distribution_weight'][0]*vbd_avg +
-                                                 self.cfg['distribution_weight'][1]*vbd_low +
-                                                 self.cfg['distribution_weight'][2]*vbd_high)
+                        self.vbd[pos][player] = players_fpts_weighted[player] - vbd_baseline[pos]
         
         # Generate ranking scores for all players
         self.ranking_score = {}
@@ -489,7 +488,7 @@ class PlayerDatabase:
 
         # Sort by ranking score to get rank
         self.rank = sorted(self.ranking_score, key=self.ranking_score.get, reverse=True)
-       
+               
     # Get value based draft score 
     def get_vbd(self, player):
         
