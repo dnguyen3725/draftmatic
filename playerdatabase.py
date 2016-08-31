@@ -25,6 +25,9 @@ class PlayerDatabase:
         
         # Import average draft position data
         self.import_adp()
+        
+        # Import expert consensus ranking data
+        self.import_ecr()
 
     # Import player projections from xls files
     def import_player_projections(self):
@@ -367,12 +370,110 @@ class PlayerDatabase:
                 if not player_name in self.proj_points_high[player_position]:
                     self.proj_points_high[player_position][player_name] = 0.0
 
+    # Import expert consensus rankings
+    def import_ecr(self):
+	
+        print('Parsing Expert Consensus Ranking Data')
+		
+        # Create empty expert consensus ranking dict
+        self.ecr = {}
+		
+        # Get full filename
+        fname = os.path.join(self.cfg['root_dir'],self.cfg['f_ecr'])
+        fname = os.path.abspath(fname)
+			
+        # Read in xls workbook
+        xl_workbook = xlrd.open_workbook(fname)
+			
+        # Read in first sheet of workbook
+        xl_sheet = xl_workbook.sheet_by_index(0)
+			
+        # Number of columns
+        num_cols = xl_sheet.ncols
+			
+        # Initialize flag to search for header row
+        found_header = False
+		
+        # Iterate through rows of xls file
+        for row_idx in range(0, xl_sheet.nrows):
+				
+            # Scan through file looking for header row	
+            if (not found_header) and (xl_sheet.cell(row_idx, 1).value.find('Player Name') >= 0):
+				
+                found_header = True
+				
+            # After header row is found, process remaining player data
+            elif found_header:
+                
+                # ECR
+                ecr = xl_sheet.cell(row_idx, 0).value
+                ecr = int(ecr)
+					
+                # Player name
+                player_name = xl_sheet.cell(row_idx, 1).value.encode('utf-8')
+
+                # Position
+                player_position = xl_sheet.cell(row_idx, 2).value.encode('utf-8')
+                if player_position[0] == 'K':
+                    player_position = 'K'
+                elif player_position[0:3] == 'DST':
+                    player_position = 'DST'
+                else:
+                    player_position = player_position[0:2]
+				
+                # Team
+                player_team = xl_sheet.cell(row_idx, 2).value.encode('utf-8')
+                
+                # Check if position appended version of name has been used
+                appended_player_name = player_name + ' (' + player_position + ')'
+                if appended_player_name in self.position:
+                    # Use appended player name
+                    player_name = appended_player_name
+
+                # Add ECR to list
+                self.ecr[player_name] = ecr
+
+                # Add to position list if not already there
+                if not player_name in self.position:
+                    self.position[player_name] = player_position
+
+                # Add to team list if not already there
+                if not player_name in self.team:
+                    self.team[player_name] = player_team
+
+                # Add to players list if not already there
+                if not player_position in self.players:
+                    self.players[player_position] = []
+
+                if not player_name in self.players[player_position]:
+                    self.players[player_position].append(player_name)
+                    
+                # Add to points list if not already there
+                if not player_position in self.proj_points:
+                    self.proj_points[player_position] = {}
+                
+                if not player_name in self.proj_points[player_position]:
+                    self.proj_points[player_position][player_name] = 0.0
+                
+                if not player_position in self.proj_points_low:
+                    self.proj_points_low[player_position] = {}
+                
+                if not player_name in self.proj_points_low[player_position]:
+                    self.proj_points_low[player_position][player_name] = 0.0
+                
+                if not player_position in self.proj_points_high:
+                    self.proj_points_high[player_position] = {}
+                
+                if not player_name in self.proj_points_high[player_position]:
+                    self.proj_points_high[player_position][player_name] = 0.0
+
     # Rank Players
     def rank_players(self, draftteams, drafted_players, n_round, pos_weights, n_pick):
         
         # Initialize available player lists to include all players
         self.avail_players = copy.deepcopy(self.players)
         self.avail_adp = copy.deepcopy(self.adp)
+        self.avail_ecr = copy.deepcopy(self.ecr)
         self.avail_proj_points = copy.deepcopy(self.proj_points)
         self.avail_proj_points_low = copy.deepcopy(self.proj_points_low)
         self.avail_proj_points_high = copy.deepcopy(self.proj_points_high)
@@ -393,6 +494,7 @@ class PlayerDatabase:
             del self.avail_proj_points_low[self.position[player]][player]
             del self.avail_proj_points_high[self.position[player]][player]
             del self.avail_adp[player]
+            del self.avail_ecr[player]
 
         # Number of players deep to look for baseline player
         n_baseline_player = (n_round + self.cfg['baseline_depth'][n_round])*len(self.cfg['teams'])
