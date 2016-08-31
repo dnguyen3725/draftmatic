@@ -24,7 +24,7 @@ def set_config():
     cfg['root_dir'] = '2016_data'
     
     # Directory of draft team data
-    cfg['team_dir'] = '2016_teams_tpa'
+    cfg['team_dir'] = '2016_teams_gnc'
     
     # Player projection files
     cfg['f_proj'] = {}
@@ -39,11 +39,15 @@ def set_config():
     # Average draft position
     cfg['f_adp'] = 'FantasyPros_2016_Overall_ADP_Rankings.xls'
     
+    # Consensus Rankings
+    cfg['f_ecr'] = 'FantasyPros_2016_Draft_Overall_Rankings.xls'
+    
     # Primary team
     cfg['primary_team'] = 'Don'
     
     # Draft teams in order
     cfg['teams'] = []
+    '''
     cfg['teams'].append('Rosa')
     cfg['teams'].append('Tex')
     cfg['teams'].append('Kelly')
@@ -58,6 +62,19 @@ def set_config():
     cfg['teams'].append('Cesar')
     cfg['teams'].append('Don')
     cfg['teams'].append('Robert')
+    '''
+    cfg['teams'].append('Richeson')
+    cfg['teams'].append('Greg')
+    cfg['teams'].append('JB')
+    cfg['teams'].append('Brent')
+    cfg['teams'].append('Don')
+    cfg['teams'].append('Smutty')
+    cfg['teams'].append('Hathaway')
+    cfg['teams'].append('Amit')
+    cfg['teams'].append('VDL')
+    cfg['teams'].append('Burkhardt')
+    cfg['teams'].append('Ellie')
+    cfg['teams'].append('Hultgren')
     
     # Number of draft rounds
     #cfg['num_rounds'] = 16
@@ -75,13 +92,12 @@ def set_config():
     cfg['starters']['DST'] = 1
     '''
     cfg['starters']['QB'] = 1
-    cfg['starters']['RB'] = 2
+    cfg['starters']['RB'] = 3
     cfg['starters']['WR'] = 3
     cfg['starters']['TE'] = 1
     cfg['starters']['K'] = 1
     cfg['starters']['IDP'] = 0
     cfg['starters']['DST'] = 1
-    
     
     # Offensive player scoring (pts/unit)
     cfg['off_pts'] = {}
@@ -212,18 +228,18 @@ def set_config():
     cfg['draft_max']['QB'] = 2
     cfg['draft_max']['RB'] = 6
     cfg['draft_max']['WR'] = 6
-    cfg['draft_max']['TE'] = 2
+    cfg['draft_max']['TE'] = 1
     cfg['draft_max']['K'] = 1
     cfg['draft_max']['IDP'] = 0
     cfg['draft_max']['DST'] = 1
     
 
     # Weight deduction per excess player
-    cfg['weight_decrement'] = 0.3
+    cfg['weight_decrement'] = 0.25
 
     # Distribution weights
     # average, low, high
-    cfg['distribution_weight'] = [0.3, 0.3, 0.2]
+    cfg['distribution_weight'] = [0.4, 0.4, 0.1]
     
     # Points per ADP difference
     cfg['adp_bias'] = 0.0
@@ -246,6 +262,8 @@ def print_player_summary(player_db, n_pick, player):
     print_str = print_str + ' ('
     if player in player_db.adp:
         print_str = print_str + 'ADP{}, '.format(player_db.adp[player])
+    if player in player_db.ecr:
+        print_str = print_str + 'ECR{}, '.format(player_db.ecr[player])
     print_str = print_str + '{:.1f}/{:.1f}/{:.1f} pts/game'.format(player_db.get_fpts_low(player),
                                                                    player_db.get_fpts_avg(player),
                                                                    player_db.get_fpts_high(player))
@@ -340,7 +358,7 @@ def main():
     draft_history = []
     
     # Initialize to print players for next team
-    print_next_team = True
+    print_next_team = False
     
     # Main Loop
     while True:
@@ -389,7 +407,7 @@ def main():
             player_db_primary.rank_players(draftteams, drafted_players, n_round_primary, pos_weights_primary, n_overall_pick_primary+1)
 	    
         # Only print 5 ranking by default
-        n_print_players = min(10, len(player_db.rank))
+        n_print_players = 10
         print_round_summary = True
 
         # Console loop until valid draft command is received
@@ -420,11 +438,12 @@ def main():
                 else:
                     print 'Picks complete for primary drafter ({})'.format(cfg['primary_team'])
                     player_db_print = player_db
-        
+            
             # Print out rankings short list
             players_to_plot_vbd = pd.DataFrame(columns=cfg['starters'].keys())
             players_to_plot_rank = pd.DataFrame(columns=cfg['starters'].keys())
             players_to_plot_adp = pd.DataFrame(columns=cfg['starters'].keys())
+            players_to_plot_ecr = pd.DataFrame(columns=cfg['starters'].keys())
             n_print_players = min(n_print_players, len(player_db_print.rank))
             for i in range(0, n_print_players):
                 print_player_summary(player_db_print, n_overall_pick+i, player_db_print.rank[i])
@@ -438,13 +457,17 @@ def main():
                     players_to_plot_adp.set_value(n_overall_pick+i+1,
                                                   player_db_print.position[player_db_print.rank[i]],
                                                   player_db_print.adp[player_db_print.rank[i]])
+                if player_db_print.rank[i] in player_db_print.ecr:
+                    players_to_plot_ecr.set_value(n_overall_pick+i+1,
+                                                  player_db_print.position[player_db_print.rank[i]],
+                                                  player_db_print.ecr[player_db_print.rank[i]])
             
             # Update player 
             if n_print_players > 0:
                 
                 plt.figure(1)
                 plt.close()
-                plt.subplot(311)
+                plt.subplot(221)
                 legend_strings = []
                 # Loop over each position
                 for position in players_to_plot_rank:
@@ -460,9 +483,9 @@ def main():
                              player_db_print.rank[i])
                 # Append text for each player
                 plt.xlabel('Rank')
-                plt.ylabel('Ranking Score')
+                plt.ylabel('Weighted Ranking Score')
                 plt.legend(legend_strings)
-                plt.subplot(312)
+                plt.subplot(222)
                 legend_strings = []
                 # Loop over each position
                 for position in players_to_plot_vbd:
@@ -478,9 +501,9 @@ def main():
                              player_db_print.rank[i])
                 # Append text for each player
                 plt.xlabel('Rank')
-                plt.ylabel('VBD Score')
+                plt.ylabel('Value Based Draft Score (VBD)')
                 plt.legend(legend_strings)
-                plt.subplot(313)
+                plt.subplot(223)
                 legend_strings = []
                 # Loop over each position
                 for position in players_to_plot_adp:
@@ -497,7 +520,28 @@ def main():
                                  player_db_print.rank[i])
                 # Append text for each player
                 plt.xlabel('Rank')
-                plt.ylabel('ADP')
+                plt.ylabel('Average Draft Position (ADP)')
+                plt.gca().invert_yaxis()
+                plt.legend(legend_strings)
+                plt.subplot(224)
+                legend_strings = []
+                # Loop over each position
+                for position in players_to_plot_ecr:
+                    # Get players in this position
+                    players_to_plot_for_pos = players_to_plot_ecr[position].dropna()
+                    if players_to_plot_for_pos.size > 0:
+                        # Plot position ranks and add position to legend
+                        plt.plot(players_to_plot_for_pos,'-o')
+                        legend_strings.append(position)
+                for i in range(0, n_print_players):
+                    if player_db_print.rank[i] in player_db_print.ecr:
+                        plt.text(n_overall_pick+i+1,
+                                 player_db_print.ecr[player_db_print.rank[i]],
+                                 player_db_print.rank[i])
+                # Append text for each player
+                plt.xlabel('Rank')
+                plt.ylabel('Expert Consensus Ranking (ECR)')
+                plt.gca().invert_yaxis()
                 plt.legend(legend_strings)
                 plt.show(block=False)
             
@@ -533,7 +577,7 @@ def main():
                 draft_history = []
                 
                 # Print 5 players
-                n_print_players = min(5, len(player_db_print.rank))
+                n_print_players = min(10, len(player_db_print.rank))
                 print_round_summary = True
                 
                 break
