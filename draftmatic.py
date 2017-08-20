@@ -21,26 +21,26 @@ def set_config():
     cfg = {}
 
     # Directory of player projection data
-    cfg['root_dir'] = '2016_data'
+    cfg['root_dir'] = '2017_data'
     
     # Directory of draft team data
-    cfg['team_dir'] = '2016_teams_gnc'
+    cfg['team_dir'] = '2017_teams_gnc'
     
     # Player projection files
     cfg['f_proj'] = {}
-    cfg['f_proj']['QB'] = 'FantasyPros_Fantasy_Football_Rankings_QB.xls'
-    cfg['f_proj']['RB'] = 'FantasyPros_Fantasy_Football_Rankings_RB.xls'
-    cfg['f_proj']['WR'] = 'FantasyPros_Fantasy_Football_Rankings_WR.xls'
-    cfg['f_proj']['TE'] = 'FantasyPros_Fantasy_Football_Rankings_TE.xls'
-    cfg['f_proj']['K'] = 'FantasyPros_Fantasy_Football_Rankings_K.xls'
-    cfg['f_proj']['DST'] = 'FantasySharks_DST.xls'
-    cfg['f_proj']['IDP'] = 'FantasySharks_IDP.xls'
+    cfg['f_proj']['QB'] = 'FantasyPros_Fantasy_Football_Projections_QB.csv'
+    cfg['f_proj']['RB'] = 'FantasyPros_Fantasy_Football_Projections_RB.csv'
+    cfg['f_proj']['WR'] = 'FantasyPros_Fantasy_Football_Projections_WR.csv'
+    cfg['f_proj']['TE'] = 'FantasyPros_Fantasy_Football_Projections_TE.csv'
+    cfg['f_proj']['K'] = 'FantasyPros_Fantasy_Football_Projections_K.csv'
+    cfg['f_proj']['DST'] = 'FantasySharks_DST.csv'
+    cfg['f_proj']['IDP'] = 'FantasySharks_IDP.csv'
     
     # Average draft position
-    cfg['f_adp'] = 'FantasyPros_2016_Overall_ADP_Rankings.xls'
+    cfg['f_adp'] = 'FantasyPros_2017_Overall_ADP_Rankings.csv'
     
     # Consensus Rankings
-    cfg['f_ecr'] = 'FantasyPros_2016_Draft_Overall_Rankings.xls'
+    cfg['f_ecr'] = 'FantasyPros_2017_Draft_Overall_Rankings.csv'
     
     # Primary team
     cfg['primary_team'] = 'Don'
@@ -63,18 +63,17 @@ def set_config():
     cfg['teams'].append('Don')
     cfg['teams'].append('Robert')
     '''
-    cfg['teams'].append('Richeson')
-    cfg['teams'].append('Greg')
+    cfg['teams'].append('Margarita')
+    cfg['teams'].append('Amit')
+    cfg['teams'].append('Don')
+    cfg['teams'].append('Henry')
+    cfg['teams'].append('VDL')
     cfg['teams'].append('JB')
     cfg['teams'].append('Brent')
-    cfg['teams'].append('Don')
-    cfg['teams'].append('Smutty')
     cfg['teams'].append('Hathaway')
-    cfg['teams'].append('Amit')
-    cfg['teams'].append('VDL')
-    cfg['teams'].append('Burkhardt')
-    cfg['teams'].append('Ellie')
+    cfg['teams'].append('Duncan')
     cfg['teams'].append('Hultgren')
+    cfg['teams'].append('Smitty')
     
     # Number of draft rounds
     #cfg['num_rounds'] = 16
@@ -160,22 +159,22 @@ def set_config():
         
     # Number of rounds to establish baseline depth
     cfg['baseline_depth'] = []
-    cfg['baseline_depth'].append(8) # 1
-    cfg['baseline_depth'].append(8) # 2
-    cfg['baseline_depth'].append(8) # 3
-    cfg['baseline_depth'].append(8) # 4
-    cfg['baseline_depth'].append(8) # 5
-    cfg['baseline_depth'].append(8) # 6
-    cfg['baseline_depth'].append(8) # 7
-    cfg['baseline_depth'].append(8) # 8
-    cfg['baseline_depth'].append(8) # 9
-    cfg['baseline_depth'].append(8) # 10
-    cfg['baseline_depth'].append(8) # 11
-    cfg['baseline_depth'].append(8) # 12
-    cfg['baseline_depth'].append(8) # 13
-    cfg['baseline_depth'].append(8) # 14
-    cfg['baseline_depth'].append(8) # 15
-    cfg['baseline_depth'].append(8) # 16
+    cfg['baseline_depth'].append(6) # 1
+    cfg['baseline_depth'].append(6) # 2
+    cfg['baseline_depth'].append(6) # 3
+    cfg['baseline_depth'].append(6) # 4
+    cfg['baseline_depth'].append(6) # 5
+    cfg['baseline_depth'].append(6) # 6
+    cfg['baseline_depth'].append(6) # 7
+    cfg['baseline_depth'].append(6) # 8
+    cfg['baseline_depth'].append(6) # 9
+    cfg['baseline_depth'].append(6) # 10
+    cfg['baseline_depth'].append(6) # 11
+    cfg['baseline_depth'].append(6) # 12
+    cfg['baseline_depth'].append(6) # 13
+    cfg['baseline_depth'].append(6) # 14
+    cfg['baseline_depth'].append(6) # 15
+    cfg['baseline_depth'].append(6) # 16
 
     # Positions allowed to draft in each round
     cfg['draftable'] = []
@@ -194,7 +193,7 @@ def set_config():
     cfg['draftable'].append(('QB','RB','WR','TE')) # 12
     cfg['draftable'].append(('QB','RB','WR','TE')) # 13
     cfg['draftable'].append(('IDP','DST')) # 14
-    cfg['draftable'].append(('DST','IDP')) # 15
+    cfg['draftable'].append(('IDP','DST')) # 15
     cfg['draftable'].append(('K')) # 16
     '''
     cfg['draftable'].append(('QB','RB','WR','TE')) # 1
@@ -233,7 +232,6 @@ def set_config():
     cfg['draft_max']['IDP'] = 0
     cfg['draft_max']['DST'] = 1
     
-
     # Weight deduction per excess player
     cfg['weight_decrement'] = 0.25
 
