@@ -74,6 +74,7 @@ def set_config():
     cfg['teams'].append('Duncan')
     cfg['teams'].append('Hultgren')
     cfg['teams'].append('Smitty')
+    cfg['teams'].append('Terry')
     
     # Number of draft rounds
     #cfg['num_rounds'] = 16
@@ -167,14 +168,14 @@ def set_config():
     cfg['baseline_depth'].append(6) # 6
     cfg['baseline_depth'].append(6) # 7
     cfg['baseline_depth'].append(6) # 8
-    cfg['baseline_depth'].append(6) # 9
-    cfg['baseline_depth'].append(6) # 10
-    cfg['baseline_depth'].append(6) # 11
-    cfg['baseline_depth'].append(6) # 12
-    cfg['baseline_depth'].append(6) # 13
-    cfg['baseline_depth'].append(6) # 14
-    cfg['baseline_depth'].append(6) # 15
-    cfg['baseline_depth'].append(6) # 16
+    cfg['baseline_depth'].append(8) # 9
+    cfg['baseline_depth'].append(8) # 10
+    cfg['baseline_depth'].append(8) # 11
+    cfg['baseline_depth'].append(8) # 12
+    cfg['baseline_depth'].append(8) # 13
+    cfg['baseline_depth'].append(8) # 14
+    cfg['baseline_depth'].append(8) # 15
+    cfg['baseline_depth'].append(8) # 16
 
     # Positions allowed to draft in each round
     cfg['draftable'] = []
@@ -225,22 +226,41 @@ def set_config():
     '''
     cfg['draft_max'] = {}
     cfg['draft_max']['QB'] = 2
-    cfg['draft_max']['RB'] = 6
-    cfg['draft_max']['WR'] = 6
+    cfg['draft_max']['RB'] = 5
+    cfg['draft_max']['WR'] = 5
     cfg['draft_max']['TE'] = 1
     cfg['draft_max']['K'] = 1
     cfg['draft_max']['IDP'] = 0
     cfg['draft_max']['DST'] = 1
     
     # Weight deduction per excess player
-    cfg['weight_decrement'] = 0.25
+    cfg['weight_decrement'] = 0.35
 
     # Distribution weights
     # average, low, high
-    cfg['distribution_weight'] = [0.4, 0.4, 0.1]
+    cfg['distribution_weight'] = []
+    cfg['distribution_weight'].append((0.4, 0.5, 0.1)) # 1
+    cfg['distribution_weight'].append((0.4, 0.5, 0.1)) # 2
+    cfg['distribution_weight'].append((0.6, 0.2, 0.2)) # 3
+    cfg['distribution_weight'].append((0.6, 0.2, 0.2)) # 4
+    cfg['distribution_weight'].append((0.6, 0.2, 0.2)) # 5
+    cfg['distribution_weight'].append((0.6, 0.2, 0.2)) # 6
+    cfg['distribution_weight'].append((1.0, 0.0, 0.0)) # 7
+    cfg['distribution_weight'].append((1.0, 0.0, 0.0)) # 8
+    cfg['distribution_weight'].append((1.0, 0.0, 0.0)) # 9
+    cfg['distribution_weight'].append((0.5, 0.0, 0.5)) # 10
+    cfg['distribution_weight'].append((0.5, 0.0, 0.5)) # 11
+    cfg['distribution_weight'].append((0.5, 0.0, 0.5)) # 12
+    cfg['distribution_weight'].append((0.5, 0.0, 0.5)) # 13
+    cfg['distribution_weight'].append((0.5, 0.0, 0.5)) # 14
+    cfg['distribution_weight'].append((0.5, 0.0, 0.5)) # 15
+    cfg['distribution_weight'].append((0.5, 0.0, 0.5)) # 16
     
     # Points per ADP difference
     cfg['adp_bias'] = 0.0
+    
+    # Points per ECR difference
+    cfg['ecr_bias'] = 1.0
     
     # Number of games in season
     cfg['num_games_per_season'] = 13

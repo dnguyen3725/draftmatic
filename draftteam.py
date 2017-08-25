@@ -317,7 +317,8 @@ class DraftTeam:
             elif pos_counts[pos] >= self.cfg['starters'][pos]:
 
                 # Decrement weight if starter positions have been filled
-                pos_weights[pos] = 1.0 - self.cfg['weight_decrement']*(pos_counts[pos] - self.cfg['starters'][pos] + 1)
+                #pos_weights[pos] = 1.0 - self.cfg['weight_decrement']*(pos_counts[pos] - self.cfg['starters'][pos] + 1)
+                pos_weights[pos] = (1.0 - self.cfg['weight_decrement'])**max(0, pos_counts[pos] - self.cfg['starters'][pos] + 1)
 
             else:
 
