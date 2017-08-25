@@ -353,8 +353,8 @@ class PlayerDatabase:
 					    # If player already exists append position to name
                         if player_name in self.position:
                             player_name = player_name + ' (' + pos + ')'
-					
-                        # Add team entry for player
+					        
+					    # Add team entry for player
                         self.team[player_name] = team_name
 		
                         # Add entry for position lookup
@@ -966,9 +966,9 @@ class PlayerDatabase:
                 # Compute weighted expected points
                 players_fpts_weighted = {}
                 for player in self.avail_proj_points[pos]:
-                    players_fpts_weighted[player] = (self.cfg['distribution_weight'][0]*self.avail_proj_points[pos][player] +
-                                                     self.cfg['distribution_weight'][1]*self.avail_proj_points_low[pos][player] +
-                                                     self.cfg['distribution_weight'][2]*self.avail_proj_points_high[pos][player])
+                    players_fpts_weighted[player] = (self.cfg['distribution_weight'][n_round][0]*self.avail_proj_points[pos][player] +
+                                                     self.cfg['distribution_weight'][n_round][1]*self.avail_proj_points_low[pos][player] +
+                                                     self.cfg['distribution_weight'][n_round][2]*self.avail_proj_points_high[pos][player])
                 
                 # Sort players in position group from highest to lowest by avg fpts
                 players_fpts_sorted = sorted(players_fpts_weighted, key=players_fpts_weighted.get, reverse=True)
@@ -1002,6 +1002,9 @@ class PlayerDatabase:
                         if player in self.adp:
                             self.ranking_score[player] = self.ranking_score[player] + (n_pick - self.adp[player])*self.cfg['adp_bias']
 
+                        # Apply ecr weight if available
+                        if player in self.ecr:
+                            self.ranking_score[player] = self.ranking_score[player] + (n_pick - self.ecr[player])*self.cfg['ecr_bias']
 
         # Sort by ranking score to get rank
         self.rank = sorted(self.ranking_score, key=self.ranking_score.get, reverse=True)
